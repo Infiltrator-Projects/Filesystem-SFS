@@ -30,7 +30,8 @@ static int fixture(uint32_t op, const char *path, const void *profile,
   case IFS_SFS_FIXTURE_POPULATE: if(p) rc=ldtm_populate_sfs_volume(path,p); break;
   case IFS_SFS_FIXTURE_VERIFY: if(p) rc=ldtm_verify_sfs_payload(path,p,detail,cap); break;
   case IFS_SFS_FIXTURE_VERIFY_DEFRAG:
-   if(p) rc=ldtm_verify_sfs_payload_after_defrag(path,p,detail,cap); break;
+   if(p) rc=ldtm_verify_sfs_payload_after_defrag(path,p,detail,cap);
+   break;
   default: errno=EINVAL; break;
  }
  ifs_unbind_fixture(); ifs_unbind_services();
