@@ -8,7 +8,8 @@ int main(void) {
  CHECK(api && api->abi_version==IFS_SFS_MODULE_V1);
  CHECK(api->structure_bytes>=sizeof(*api));
  CHECK(api->format_id && strcmp(api->format_id,"sfs")==0);
- CHECK(api->capabilities==IFS_SFS_CAP_RUN && api->run);
+ CHECK(api->capabilities==(IFS_SFS_CAP_RUN | IFS_SFS_CAP_FIXTURE) && api->run && api->fixture);
  CHECK(api->run(0,NULL,NULL)!=0);
+ CHECK(api->fixture(0,NULL,NULL,NULL,0,NULL,NULL)!=0);
  return 0;
 }
