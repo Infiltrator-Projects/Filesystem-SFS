@@ -17,7 +17,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: SFS-so
-          path: build/SFS.so
+          path: |
+            build/SFS.so
+            docs/SFS.pdf
 
       - name: Verify exactly one PDF per runtime SO
         shell: bash
