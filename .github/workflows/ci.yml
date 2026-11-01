@@ -18,3 +18,15 @@ jobs:
         with:
           name: SFS-so
           path: build/SFS.so
+
+      - name: Verify exactly one PDF per runtime SO
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="$(mktemp -d)"
+          trap 'rm -rf "$stage"' EXIT
+          DESTDIR="$stage" cmake --install build
+          test "$(find "$stage" -type f | wc -l)" -eq 2
+          test -f "$stage/System/Filesystems/SFS.so"
+          test -f "$stage/System/Resources/Documentation/Filesystem-SFS/SFS.pdf"
+          test "$(head -c 5 "$stage/System/Resources/Documentation/Filesystem-SFS/SFS.pdf")" = '%PDF-'
