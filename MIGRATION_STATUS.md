@@ -1,7 +1,7 @@
-# SFS0 migration — 2026-10-30
+# SFS source consolidation — 6 November 2026
 
-Canonical SFS0 core and design copied unmodified from Filesystems ca2fa1210c3c1f2b6f52cd15b3da6dfa83d453ad. The Defragmenter SFS native engine and relocation worker, which **also handle SFS2**, are copied unchanged into `migration/defragmenter/native/` from Defragmenter commit 30af892d8897d3aeaeefeac1bfcdb9620a0a5c72.
+This repository now contains every source and design file under `native/filesystems/sfs/` in central Filesystems main at `a253fb724ce1fd760a361219281effb6abd71367`. The existing independent SFS portable core was byte-identical to the central source and retained. Missing Linux VFS adapter, historical ASFS implementation, and Windows adapter documentation were imported with the original source/provenance intact.
 
-SFS2 is a separate disk format and has a different independent repository: `Filesystem-SFS2`. Do **not** automatically reuse SFS0 disk structures for SFS2. The shared Defragmenter source in this directory is a transitional reference; split correctly and verify variant-specific structures before releasing either format.
+The local `standalone/kernel.json` no longer references a downloaded Filesystems revision. The `sfs.ko` build now compiles this repository's own Linux implementation. The `SFS.so` build continues to use the independent canonical source and regression tests.
 
-Not yet a standalone SFS.so, Common ABI adopter, or BOOT/kernel-qualified driver. Original active sources remain untouched.
+Runtime, kernel-module and media correctness must still be tested against the exact new main commit. Central Filesystems source deletion requires detaching its CMake, test and packaging dependencies first, not silently breaking the manager.
