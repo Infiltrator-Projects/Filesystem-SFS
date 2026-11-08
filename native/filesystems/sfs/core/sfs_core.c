@@ -124,23 +124,29 @@ ifs_sfs_u16 ifs_sfs_component_hash(
 {
     ifs_sfs_u16 hash = 0U;
     ifs_sfs_u16 length = 0U;
-    const ifs_sfs_u8 *cursor = name;
+    ifs_sfs_u16 index;
 
     if (name == 0)
         return 0U;
 
-    while (cursor[length] != 0U &&
-           cursor[length] != (ifs_sfs_u8)'/' &&
-           length < IFS_SFS_MAX_FILENAME)
+    /*
+     * Component lengths cannot exceed the SFS on-disk name limit.
+     * Test the bound before dereferencing name[length], and use the same
+     * bounded length for hashing.  A malformed nonterminated component
+     * must never cause an unbounded scan in either host adapter.
+     */
+    while (length < IFS_SFS_MAX_FILENAME &&
+           name[length] != 0U &&
+           name[length] != (ifs_sfs_u8)'/')
         length++;
 
     hash = length;
-    while (*cursor != 0U && *cursor != (ifs_sfs_u8)'/') {
+    for (index = 0U; index < length; ++index) {
         const ifs_sfs_u8 character =
-            case_sensitive != 0 ? *cursor : ifs_sfs_fold_character(*cursor);
+            case_sensitive != 0 ? name[index] :
+                                  ifs_sfs_fold_character(name[index]);
 
         hash = (ifs_sfs_u16)(hash * 13U + character);
-        cursor++;
     }
 
     return hash;

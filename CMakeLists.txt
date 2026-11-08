@@ -14,8 +14,10 @@ FetchContent_MakeAvailable(infiltratr_common)
 # by this standalone filesystem package.
 set_property(DIRECTORY "${infiltratr_common_SOURCE_DIR}" PROPERTY EXCLUDE_FROM_ALL TRUE)
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/version.h" "#define LD_VERSION \"1.0.0\"\n")
+# The Linux sfs.ko adapter includes this exact portable format core.
+# Link it into SFS.so instead of leaving two independent policy engines.
 add_library(sfs-driver SHARED native/sfs_native.c native/sfs_worker.c module/sfs_module.c compat/legacy_services.c
- fixtures/sfs_codec.c compat/fixture_bridge.c)
+ native/filesystems/sfs/core/sfs_core.c fixtures/sfs_codec.c compat/fixture_bridge.c)
 set_source_files_properties(native/sfs_worker.c PROPERTIES COMPILE_DEFINITIONS "main=ifs_sfs_worker_main")
 set_target_properties(sfs-driver PROPERTIES PREFIX "" OUTPUT_NAME "SFS" SUFFIX ".so")
 target_include_directories(sfs-driver PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/native" "${CMAKE_CURRENT_SOURCE_DIR}/compat" "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/include" "${CMAKE_CURRENT_BINARY_DIR}")
@@ -27,6 +29,12 @@ if(BUILD_TESTING)
  target_include_directories(sfs-module-test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
  target_link_libraries(sfs-module-test PRIVATE sfs-driver)
  add_test(NAME sfs-module-interface COMMAND sfs-module-test)
+ add_executable(sfs-canonical-core-link-test tests/test_canonical_core.c)
+ target_include_directories(sfs-canonical-core-link-test PRIVATE
+   "${CMAKE_CURRENT_SOURCE_DIR}/native/filesystems/sfs/core")
+ target_compile_options(sfs-canonical-core-link-test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+ target_link_libraries(sfs-canonical-core-link-test PRIVATE sfs-driver)
+ add_test(NAME sfs-canonical-core-link COMMAND sfs-canonical-core-link-test)
 endif()
 install(TARGETS sfs-driver LIBRARY DESTINATION /System/Filesystems)
 # Install only this filesystem's illustrated PDF beside its native shared object.
