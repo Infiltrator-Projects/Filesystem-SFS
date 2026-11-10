@@ -64,9 +64,37 @@ int main(void) {
     host.release=memory_free;
     CHECK(ifs_fs_common_api_valid(common,"sfs"));
     CHECK(ifs_fs_api_v2_valid(v2,"sfs"));
-    CHECK(v2->base_v1==common && v2->group_mask==0u);
+    CHECK(ifs_fs_api_v2_native_valid(v2,"sfs"));
+    CHECK(v2->base_v1==NULL &&
+          v2->group_mask==IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE));
     CHECK(common->capabilities==IFS_FS_CAP_PROBE);
     CHECK(!common->mount && !common->format && !common->read);
+    {
+      const IfsFsCoreOpsV1 *core =
+          (const IfsFsCoreOpsV1 *)ifs_fs_group_v2(v2,IFS_FS_GROUP_CORE);
+      IfsFsHostRuntimeV2 h2={0};
+      h2.abi_version=IFS_FS_HOST_ABI_V2;
+      h2.structure_bytes=sizeof(h2);
+      h2.capabilities=IFS_FS_HOST_READ_ONLY;
+      h2.volume_bytes=sizeof(media);
+      h2.logical_sector_bytes=SFS_BLOCK;
+      h2.physical_sector_bytes=SFS_BLOCK;
+      h2.maximum_transfer_bytes=SFS_BLOCK;
+      h2.read_at=memory_read;
+      h2.allocate=memory_alloc;
+      h2.release=memory_free;
+      CHECK(core && core->header.capabilities==IFS_FS_CORE_PROBE &&
+            core->probe && !core->mount && !core->read);
+      CHECK(ifs_fs_host_v2_valid(&h2));
+      make_root(0u,2u);make_root(SFS_TOTAL-1u,3u);
+      CHECK(core->probe(&h2,&variant)==IFS_FS_OK &&
+            variant==IFS_SFS_STRUCTURE_VERSION);
+      media[4u]^=0x40u;
+      CHECK(core->probe(&h2,&variant)==IFS_FS_OK);
+      media[SFS_BLOCK*(SFS_TOTAL-1u)+4u]^=0x40u;
+      CHECK(core->probe(&h2,&variant)!=IFS_FS_OK);
+      memset(media,0,sizeof(media));
+    }
     make_root(0u,2u);make_root(SFS_TOTAL-1u,3u);
     CHECK(common->probe(&host,&variant)==IFS_FS_OK &&
           variant==IFS_SFS_STRUCTURE_VERSION);
