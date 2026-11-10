@@ -1,49 +1,13 @@
-/* SPDX-License-Identifier: GPL-3.0-or-later */
-#include "ifs_sfs_module_v1.h"
-#include "ifs_sfs_fixture_host_v1.h"
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Independent SFS root/probe implementation, strict Common V2 export only.
+ * The probe is backed by the same canonical on-media checksum/layout policy
+ * used by the source-owned kernel driver. No fallback ABI is exported.
+ */
 #include <infiltratr/filesystem_module_v2.h>
 #include "../native/filesystems/sfs/core/sfs_core.h"
 #include <stdint.h>
+#include <stddef.h>
 #include <string.h>
-#include <errno.h>
-int ifs_sfs_worker_main(int, char **);
-int ldtm_format_sfs_volume(const char *);
-int ldtm_populate_sfs_volume(const char *,const LdtmFragmentProfile *);
-int ldtm_verify_sfs_payload(const char *,const LdtmFragmentProfile *,char *,size_t);
-int ldtm_verify_sfs_payload_after_defrag(const char *,const LdtmFragmentProfile *,char *,size_t);
-int ifs_bind_services(const IfsDefragServicesV1 *);
-void ifs_unbind_services(void);
-int ifs_bind_fixture(const IfsSfsFixtureHostV1 *);
-void ifs_unbind_fixture(void);
-static int execute(int argc, char **argv, const IfsDefragServicesV1 *host) {
- if(ifs_bind_services(host)!=0) return 1;
- int result=ifs_sfs_worker_main(argc,argv);
- ifs_unbind_services();
- return result;
-}
-static int fixture(uint32_t op, const char *path, const void *profile,
- char *detail, size_t cap, const IfsDefragServicesV1 *services, const void *host) {
- if(!path || ifs_bind_services(services)!=0) return -1;
- if(ifs_bind_fixture((const IfsSfsFixtureHostV1 *)host)!=0) {
-    ifs_unbind_services(); return -1;
- }
- const LdtmFragmentProfile *p=(const LdtmFragmentProfile *)profile;
- int rc=-1;
- switch(op) {
-  case IFS_SFS_FIXTURE_FORMAT: rc=ldtm_format_sfs_volume(path); break;
-  case IFS_SFS_FIXTURE_POPULATE: if(p) rc=ldtm_populate_sfs_volume(path,p); break;
-  case IFS_SFS_FIXTURE_VERIFY: if(p) rc=ldtm_verify_sfs_payload(path,p,detail,cap); break;
-  case IFS_SFS_FIXTURE_VERIFY_DEFRAG:
-   if(p) rc=ldtm_verify_sfs_payload_after_defrag(path,p,detail,cap);
-   break;
-  default: errno=EINVAL; break;
- }
- ifs_unbind_fixture(); ifs_unbind_services();
- return rc;
-}
-static const IfsSfsModuleV1 sfs = {IFS_SFS_MODULE_V1,sizeof(IfsSfsModuleV1),"sfs",
- IFS_SFS_CAP_RUN | IFS_SFS_CAP_FIXTURE,execute,fixture};
-const IfsSfsModuleV1 *infiltrator_filesystem_sfs_v1(void) { return &sfs; }
 
 /* Format probing is backed by the exact portable root validation and
  * checksum engine already linked into SFS.so. The kernel and this provider
@@ -138,18 +102,6 @@ static int sfs_probe_native(const SfsCommonIo *h,uint32_t *variant) {
     *variant=IFS_SFS_STRUCTURE_VERSION;
     return IFS_FS_OK;
 }
-/* Host-independent parser is shared by both entry points.
- * No V1 ABI call is made when a V2 consumer probes the filesystem. */
-static int common_probe(const IfsFsHostIoV1 *h,uint32_t *variant) {
-    SfsCommonIo io;
-    if(!h || h->structure_bytes<sizeof(*h))return IFS_FS_INVALID;
-    io.context=h->context;
-    io.volume_bytes=h->volume_bytes;
-    io.read_at=h->read_at;
-    io.allocate=h->allocate;
-    io.release=h->release;
-    return sfs_probe_native(&io,variant);
-}
 static int v2_probe(const IfsFsHostRuntimeV2 *h,uint32_t *variant) {
     SfsCommonIo io;
     if(!ifs_fs_host_v2_valid(h))return IFS_FS_INVALID;
@@ -160,32 +112,26 @@ static int v2_probe(const IfsFsHostRuntimeV2 *h,uint32_t *variant) {
     io.release=h->release;
     return sfs_probe_native(&io,variant);
 }
-/* This native SFS.so already contains a worker and fixture format engine,
- * but has no qualified host-callback file API. Advertise probe only. */
-static const IfsFsModuleApiV1 common_v1={
-    .abi_version=IFS_FS_COMMON_ABI_V1,
-    .structure_bytes=sizeof(IfsFsModuleApiV1),
-    .format_id="sfs",
-    .capabilities=IFS_FS_CAP_PROBE,
-    .probe=common_probe
-};
-__attribute__((visibility("default")))
-const IfsFsModuleApiV1 *infiltrator_filesystem_api_v1(void) {
-    return &common_v1;
-}
-static const IfsFsCoreOpsV1 v2_core={
-    .header={IFS_FS_GROUP_ABI_V1,sizeof(IfsFsCoreOpsV1),
+/* Only qualified read-only CORE probing is advertised. The existing
+ * native format and relocation engines remain local to this provider,
+ * but have not been adapted to the V2 host callbacks yet. */
+static const IfsFsCoreOpsV2 v2_core={
+    .header={IFS_FS_GROUP_ABI_V2,sizeof(IfsFsCoreOpsV2),
              IFS_FS_GROUP_CORE,0u,IFS_FS_CORE_PROBE},
     .probe=v2_probe
 };
 static const IfsFsGroupHeaderV2 *query_core(
     uint32_t id,uint32_t minimum,uint32_t maximum) {
-    return id==IFS_FS_GROUP_CORE && minimum<=IFS_FS_GROUP_ABI_V1 &&
-        maximum>=IFS_FS_GROUP_ABI_V1 ? &v2_core.header : NULL;
+    return id==IFS_FS_GROUP_CORE && minimum<=IFS_FS_GROUP_ABI_V2 &&
+        maximum>=IFS_FS_GROUP_ABI_V2 ? &v2_core.header : NULL;
 }
 static const IfsFsModuleApiV2 common_v2={
-    IFS_FS_COMMON_ABI_V2,sizeof(IfsFsModuleApiV2),"sfs",
-    IFS_FS_PROFILE_HOSTED,IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE),NULL,query_core
+    .abi_version=IFS_FS_COMMON_ABI_V2,
+    .structure_bytes=sizeof(IfsFsModuleApiV2),
+    .format_id="sfs",
+    .runtime_profiles=IFS_FS_PROFILE_HOSTED,
+    .group_mask=IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE),
+    .query_group=query_core
 };
 __attribute__((visibility("default")))
 const IfsFsModuleApiV2 *infiltrator_filesystem_api_v2(void) {
