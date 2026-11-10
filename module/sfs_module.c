@@ -4,6 +4,10 @@
  * used by the source-owned kernel driver. No fallback ABI is exported.
  */
 #include <infiltratr/filesystem_module_v2.h>
+/* Readable without executing untrusted ELF code; tied to the V2 export. */
+__attribute__((used,section(".ifsmeta")))
+static const char v2_module_identity[]="IFS-MODULE:sfs:common2";
+
 #include "../native/filesystems/sfs/core/sfs_core.h"
 #include <stdint.h>
 #include <stddef.h>
