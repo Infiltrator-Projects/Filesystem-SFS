@@ -15,6 +15,7 @@ jobs:
           test -f build/SFS.so
           nm -D build/SFS.so | grep -F 'infiltrator_filesystem_api_v2'
           ! nm -D build/SFS.so | grep -E 'infiltrator_filesystem_.*_v1'
+          readelf -p .ifsmeta build/SFS.so | grep -F 'IFS-MODULE:sfs:common2'
       - uses: actions/upload-artifact@v4
         with:
           name: SFS-so
