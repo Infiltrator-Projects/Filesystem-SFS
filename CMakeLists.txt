@@ -8,7 +8,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(INFILTRATR_COMMON_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(INFILTRATR_COMMON_BUILD_SHARED OFF CACHE BOOL "" FORCE)
-FetchContent_Declare(infiltratr_common GIT_REPOSITORY https://github.com/Infiltrator-Projects/Libraries.git GIT_TAG c76ec95ef66fc728df6a906ad75a6a4dd63b419b)
+FetchContent_Declare(infiltratr_common GIT_REPOSITORY https://github.com/Infiltrator-Projects/Libraries.git GIT_TAG 5b5fb95988c8d0b53ed29fdecfb0b70274182fd6)
 FetchContent_MakeAvailable(infiltratr_common)
 # Common is a link-time dependency; its development files must not be installed
 # by this standalone filesystem package.
@@ -27,7 +27,7 @@ target_link_libraries(sfs-driver PRIVATE InfiltratrCommon::Common OpenSSL::Crypt
 if(BUILD_TESTING)
  add_executable(sfs-module-test tests/test_sfs_module.c)
  target_include_directories(sfs-module-test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
- target_link_libraries(sfs-module-test PRIVATE sfs-driver)
+ target_link_libraries(sfs-module-test PRIVATE sfs-driver InfiltratrCommon::Common)
  add_test(NAME sfs-module-interface COMMAND sfs-module-test)
  add_executable(sfs-canonical-core-link-test tests/test_canonical_core.c)
  target_include_directories(sfs-canonical-core-link-test PRIVATE
