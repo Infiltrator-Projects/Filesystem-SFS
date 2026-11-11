@@ -69,7 +69,8 @@ static int sfs_root(const SfsCommonIo *h, uint32_t block_size,
     h->release(h->context,block);
     return valid;
 }
-static int sfs_probe_native(const SfsCommonIo *h,uint32_t *variant) {
+static int sfs_probe_native(const SfsCommonIo *h,uint32_t *variant,
+                            SfsRoot *selected) {
     SfsRoot first={0}, last={0};
     int primary=0, backup=0;
     if(!h||!h->read_at||!variant ||
@@ -104,40 +105,135 @@ static int sfs_probe_native(const SfsCommonIo *h,uint32_t *variant) {
         first.objects!=last.objects || first.extents!=last.extents ||
         first.nodes!=last.nodes))return IFS_FS_CORRUPT;
     *variant=IFS_SFS_STRUCTURE_VERSION;
+    if(selected) {
+        const int newer=ifs_sfs_select_root_copy(
+            primary,first.sequence,backup,last.sequence);
+        if(newer<0)return IFS_FS_CORRUPT;
+        *selected=newer ? last:first;
+    }
     return IFS_FS_OK;
 }
-static int v2_probe(const IfsFsHostRuntimeV2 *h,uint32_t *variant) {
-    SfsCommonIo io;
-    if(!ifs_fs_host_v2_valid(h))return IFS_FS_INVALID;
-    io.context=h->context;
-    io.volume_bytes=h->volume_bytes;
-    io.read_at=h->read_at;
-    io.allocate=h->allocate;
-    io.release=h->release;
-    return sfs_probe_native(&io,variant);
+/* The host's read_at contract is sector-aligned, while SFS roots and
+ * bitmap/object metadata are byte-addressed. Common V2 owns bounded,
+ * aligned, host-buffered reads; no standalone V1 I/O service is used. */
+static int v2_read(void *context,uint64_t at,void *buffer,uint32_t bytes)
+{
+    const IfsFsHostRuntimeV2 *host=context;
+    return ifs_fs_host_read_bytes_v2(host,at,buffer,bytes)==IFS_FS_OK?0:-1;
 }
-/* Only qualified read-only CORE probing is advertised. The existing
- * native format and relocation engines remain local to this provider,
- * but have not been adapted to the V2 host callbacks yet. */
-static const IfsFsCoreOpsV2 v2_core={
+static void *v2_allocate(void *context,size_t bytes)
+{
+    const IfsFsHostRuntimeV2 *host=context;
+    return host->allocate(host->context,bytes);
+}
+static void v2_release(void *context,void *memory)
+{
+    const IfsFsHostRuntimeV2 *host=context;
+    host->release(host->context,memory);
+}
+static int make_io(const IfsFsHostRuntimeV2 *host,SfsCommonIo *io)
+{
+    if(!host || !io || !ifs_fs_host_v2_valid(host))
+        return IFS_FS_INVALID;
+    io->context=(void *)host;
+    io->volume_bytes=host->volume_bytes;
+    io->read_at=v2_read;
+    io->allocate=v2_allocate;
+    io->release=v2_release;
+    return IFS_FS_OK;
+}
+static int v2_probe(const IfsFsHostRuntimeV2 *host,uint32_t *variant)
+{
+    SfsCommonIo io={0};
+    int rc=make_io(host,&io);
+    if(rc!=IFS_FS_OK)return rc;
+    return sfs_probe_native(&io,variant,NULL);
+}
+
+/* One module instance owns one immutable, validated root geometry snapshot.
+ * Generation tokens prevent a stale handle from being reused after unmount. */
+static struct {
+    uintptr_t generation,active;
+    SfsRoot root;
+} mounted;
+static int live(void *volume)
+{
+    return mounted.active!=0u && (uintptr_t)volume==mounted.active;
+}
+static void describe(IfsFsVolumeInfoV2 *info)
+{
+    info->structure_bytes=sizeof(*info);
+    info->variant=IFS_SFS_STRUCTURE_VERSION;
+    info->block_bytes=mounted.root.block_size;
+    info->max_name_bytes=IFS_SFS_MAX_FILENAME;
+    info->total_bytes=(uint64_t)mounted.root.total_blocks*
+                      mounted.root.block_size;
+    /* This root layout does not independently qualify a free-block count. */
+    info->free_bytes=0u;
+}
+static int v2_mount(const IfsFsHostRuntimeV2 *host,void **volume,
+                    IfsFsVolumeInfoV2 *info)
+{
+    SfsCommonIo io={0};
+    SfsRoot root={0};
+    uint32_t variant=0u;
+    int rc;
+    if(!volume || !info || info->structure_bytes<sizeof(*info))
+        return IFS_FS_INVALID;
+    *volume=NULL;
+    if(mounted.active || mounted.generation==UINTPTR_MAX)
+        return IFS_FS_BUSY;
+    rc=make_io(host,&io);
+    if(rc!=IFS_FS_OK)return rc;
+    rc=sfs_probe_native(&io,&variant,&root);
+    if(rc!=IFS_FS_OK)return rc;
+    mounted.root=root;
+    mounted.active=++mounted.generation;
+    describe(info);
+    *volume=(void *)mounted.active;
+    return IFS_FS_OK;
+}
+static int v2_unmount(void *volume)
+{
+    if(!live(volume))return IFS_FS_INVALID;
+    mounted.active=0u;
+    memset(&mounted.root,0,sizeof(mounted.root));
+    return IFS_FS_OK;
+}
+static int v2_volume_query(void *volume,IfsFsVolumeInfoV2 *info)
+{
+    if(!live(volume)||!info||info->structure_bytes<sizeof(*info))
+        return IFS_FS_INVALID;
+    describe(info);
+    return IFS_FS_OK;
+}
+static const IfsFsCoreOpsV2 core={
     .header={IFS_FS_GROUP_ABI_V2,sizeof(IfsFsCoreOpsV2),
-             IFS_FS_GROUP_CORE,0u,IFS_FS_CORE_PROBE},
-    .probe=v2_probe
+             IFS_FS_GROUP_CORE,0u,IFS_FS_CORE_PROBE|IFS_FS_CORE_MOUNT},
+    .probe=v2_probe,.mount=v2_mount,.unmount=v2_unmount
 };
-static const IfsFsGroupHeaderV2 *query_core(
-    uint32_t id,uint32_t minimum,uint32_t maximum) {
-    return id==IFS_FS_GROUP_CORE && minimum<=IFS_FS_GROUP_ABI_V2 &&
-        maximum>=IFS_FS_GROUP_ABI_V2 ? &v2_core.header : NULL;
+static const IfsFsVolumeOpsV2 volume_ops={
+    .header={IFS_FS_GROUP_ABI_V2,sizeof(IfsFsVolumeOpsV2),
+             IFS_FS_GROUP_VOLUME,0u,IFS_FS_VOLUME_QUERY},
+    .query=v2_volume_query
+};
+static const IfsFsGroupHeaderV2 *query(
+    uint32_t id,uint32_t minimum,uint32_t maximum)
+{
+    if(minimum>IFS_FS_GROUP_ABI_V2 || maximum<IFS_FS_GROUP_ABI_V2)
+        return NULL;
+    if(id==IFS_FS_GROUP_CORE)return &core.header;
+    if(id==IFS_FS_GROUP_VOLUME)return &volume_ops.header;
+    return NULL;
 }
-static const IfsFsModuleApiV2 common_v2={
-    .abi_version=IFS_FS_COMMON_ABI_V2,
-    .structure_bytes=sizeof(IfsFsModuleApiV2),
-    .format_id="sfs",
-    .runtime_profiles=IFS_FS_PROFILE_HOSTED,
-    .group_mask=IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE),
-    .query_group=query_core
+static const IfsFsModuleApiV2 api={
+    IFS_FS_COMMON_ABI_V2,sizeof(IfsFsModuleApiV2),"sfs",
+    IFS_FS_PROFILE_HOSTED,
+    IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE)|
+        IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME),query
 };
 __attribute__((visibility("default")))
-const IfsFsModuleApiV2 *infiltrator_filesystem_api_v2(void) {
-    return &common_v2;
+const IfsFsModuleApiV2 *infiltrator_filesystem_api_v2(void)
+{
+    return &api;
 }

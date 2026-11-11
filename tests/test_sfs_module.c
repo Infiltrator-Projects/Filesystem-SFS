@@ -31,9 +31,11 @@ static void make_root(uint32_t block,uint16_t serial) {
     be32(p+108u,4u);be32(p+112u,5u);
     be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
 }
+static uint32_t logical_sector=512u;
 static int memory_read(void *ctx,uint64_t at,void *buf,uint32_t n) {
     (void)ctx;
-    if(at>sizeof(media)||n>sizeof(media)-at)return -1;
+    if(at%logical_sector || n%logical_sector || n>logical_sector ||
+       at>sizeof(media)||n>sizeof(media)-at)return -1;
     memcpy(buf,media+(size_t)at,n);return 0;
 }
 static void *memory_alloc(void *ctx,size_t bytes) {(void)ctx;return malloc(bytes);}
@@ -43,12 +45,17 @@ int main(void) {
     const IfsFsModuleApiV2 *api=infiltrator_filesystem_api_v2();
     CHECK(ifs_fs_api_v2_valid(api,"sfs"));
     CHECK(api->runtime_profiles==IFS_FS_PROFILE_HOSTED);
-    CHECK(api->group_mask==IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE));
+    CHECK(api->group_mask==(IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE)|
+                            IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME)));
     const IfsFsCoreOpsV2 *core=
         (const IfsFsCoreOpsV2 *)ifs_fs_group_v2(api,IFS_FS_GROUP_CORE);
-    CHECK(core && core->header.capabilities==IFS_FS_CORE_PROBE);
-    CHECK(core->probe && !core->mount && !core->read && !core->write);
-    CHECK(!ifs_fs_group_v2(api,IFS_FS_GROUP_VOLUME));
+    const IfsFsVolumeOpsV2 *ops=
+        (const IfsFsVolumeOpsV2 *)ifs_fs_group_v2(api,IFS_FS_GROUP_VOLUME);
+    CHECK(core && core->header.capabilities==(IFS_FS_CORE_PROBE|IFS_FS_CORE_MOUNT));
+    CHECK(core->probe && core->mount && core->unmount &&
+          !core->read && !core->write);
+    CHECK(ops && ops->header.capabilities==IFS_FS_VOLUME_QUERY &&
+          ops->query && !ops->format && !ops->repair);
     IfsFsHostRuntimeV2 host={0};
     host.abi_version=IFS_FS_HOST_ABI_V2;
     host.structure_bytes=sizeof(host);
@@ -67,6 +74,41 @@ int main(void) {
     make_root(SFS_TOTAL-1u,3u);
     CHECK(core->probe(&host,&variant)==IFS_FS_OK &&
           variant==IFS_SFS_STRUCTURE_VERSION);
+    IfsFsVolumeInfoV2 info={0},snapshot={0};
+    void *volume=NULL,*stale=NULL;
+    info.structure_bytes=sizeof(info);
+    CHECK(core->mount(&host,&volume,&info)==IFS_FS_OK && volume);
+    stale=volume;
+    CHECK(info.variant==IFS_SFS_STRUCTURE_VERSION &&
+          info.block_bytes==SFS_BLOCK &&
+          info.total_bytes==sizeof(media) && info.free_bytes==0u &&
+          info.max_name_bytes==IFS_SFS_MAX_FILENAME);
+    snapshot.structure_bytes=sizeof(snapshot);
+    CHECK(ops->query(volume,&snapshot)==IFS_FS_OK &&
+          snapshot.total_bytes==info.total_bytes);
+    {
+        void *other=NULL;
+        CHECK(core->mount(&host,&other,&snapshot)==IFS_FS_BUSY && !other);
+    }
+    CHECK(core->unmount(volume)==IFS_FS_OK);
+    CHECK(core->unmount(stale)==IFS_FS_INVALID);
+    CHECK(ops->query(stale,&snapshot)==IFS_FS_INVALID);
+    /* Both roots still validate with 4Kn I/O even though the on-disk
+     * SFS block size is only 512 bytes. No sub-sector host reads. */
+    host.logical_sector_bytes=4096u;
+    host.physical_sector_bytes=4096u;
+    host.maximum_transfer_bytes=4096u;
+    logical_sector=4096u;
+    CHECK(ifs_fs_host_v2_valid(&host));
+    CHECK(core->probe(&host,&variant)==IFS_FS_OK);
+    info.structure_bytes=sizeof(info);
+    CHECK(core->mount(&host,&volume,&info)==IFS_FS_OK &&
+          volume!=stale && info.block_bytes==SFS_BLOCK);
+    CHECK(core->unmount(volume)==IFS_FS_OK);
+    host.logical_sector_bytes=SFS_BLOCK;
+    host.physical_sector_bytes=SFS_BLOCK;
+    host.maximum_transfer_bytes=SFS_BLOCK;
+    logical_sector=SFS_BLOCK;
     media[4u]^=0x40u;
     CHECK(core->probe(&host,&variant)==IFS_FS_OK); /* valid backup */
     media[SFS_BLOCK*(SFS_TOTAL-1u)+4u]^=0x40u;
@@ -80,6 +122,6 @@ int main(void) {
     CHECK(core->probe(&host,&variant)==IFS_FS_NOT_FOUND);
     host.logical_sector_bytes=1000u;
     CHECK(core->probe(&host,&variant)==IFS_FS_INVALID);
-    puts("SFS-STRICT-COMMON-V2-PROBE-PASS");
+    puts("SFS-STRICT-COMMON-V2-MOUNT-QUERY-PASS");
     return 0;
 }
