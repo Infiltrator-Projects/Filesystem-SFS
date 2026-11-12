@@ -150,11 +150,50 @@ static int v2_probe(const IfsFsHostRuntimeV2 *host,uint32_t *variant)
     return sfs_probe_native(&io,variant,NULL);
 }
 
+/* Read authoritative SFS allocation bitmap blocks with the same canonical
+ * bitmap geometry and checksummed metadata header used by the independent
+ * native SFS scanner. All reads remain partition-relative Common V2 IO. */
+static int sfs_verified_free_blocks(const SfsCommonIo *io,
+                                    const SfsRoot *root,uint64_t *free_count)
+{
+    uint32_t bits_per,bitmap_blocks;
+    uint64_t total=0u;
+    unsigned char *block;
+    int rc=IFS_FS_OK;
+    if(!io || !root || !free_count ||
+       ifs_sfs_compute_bitmap_layout(root->block_size,root->total_blocks,
+                                     &bits_per,&bitmap_blocks)!=0 ||
+       (uint64_t)root->bitmap+bitmap_blocks>root->total_blocks)
+        return IFS_FS_CORRUPT;
+    block=io->allocate(io->context,root->block_size);
+    if(!block)return IFS_FS_NO_MEMORY;
+    for(uint32_t group=0u;group<bitmap_blocks;++group) {
+        const uint32_t number=root->bitmap+group;
+        uint64_t first=(uint64_t)group*bits_per;
+        uint64_t covered=root->total_blocks-first;
+        if(covered>bits_per)covered=bits_per;
+        if(io->read_at(io->context,(uint64_t)number*root->block_size,
+                       block,root->block_size)!=0) {
+            rc=IFS_FS_IO_ERROR;break;
+        }
+        if(!ifs_sfs_validate_block_header(block,root->block_size,number,
+                                         UINT32_C(0x42544d50))) {
+            rc=IFS_FS_CORRUPT;break;
+        }
+        for(uint64_t bit=0u;bit<covered;++bit)
+            total+=(block[IFS_SFS_BLOCK_HEADER_SIZE+(bit>>3u)] &
+                    (unsigned char)(0x80u>>(bit&7u)))!=0u;
+    }
+    io->release(io->context,block);
+    if(rc==IFS_FS_OK)*free_count=total;
+    return rc;
+}
 /* One module instance owns one immutable, validated root geometry snapshot.
  * Generation tokens prevent a stale handle from being reused after unmount. */
 static struct {
     uintptr_t generation,active;
     SfsRoot root;
+    uint64_t free_blocks;
 } mounted;
 static int live(void *volume)
 {
@@ -168,8 +207,8 @@ static void describe(IfsFsVolumeInfoV2 *info)
     info->max_name_bytes=IFS_SFS_MAX_FILENAME;
     info->total_bytes=(uint64_t)mounted.root.total_blocks*
                       mounted.root.block_size;
-    /* This root layout does not independently qualify a free-block count. */
-    info->free_bytes=0u;
+    /* Read from fully validated, checksummed on-disk allocation blocks. */
+    info->free_bytes=mounted.free_blocks*mounted.root.block_size;
 }
 static int v2_mount(const IfsFsHostRuntimeV2 *host,void **volume,
                     IfsFsVolumeInfoV2 *info)
@@ -190,6 +229,10 @@ static int v2_mount(const IfsFsHostRuntimeV2 *host,void **volume,
     if(rc!=IFS_FS_OK)return rc;
     rc=sfs_probe_native(&io,&variant,&root);
     if(rc!=IFS_FS_OK)return rc;
+    uint64_t counted_free=0u;
+    rc=sfs_verified_free_blocks(&io,&root,&counted_free);
+    if(rc!=IFS_FS_OK)return rc;
+    mounted.free_blocks=counted_free;
     mounted.root=root;
     mounted.active=++mounted.generation;
     describe(info);
@@ -201,6 +244,7 @@ static int v2_unmount(void *volume)
     if(!live(volume))return IFS_FS_INVALID;
     mounted.active=0u;
     memset(&mounted.root,0,sizeof(mounted.root));
+    mounted.free_blocks=0u;
     return IFS_FS_OK;
 }
 static int v2_volume_query(void *volume,IfsFsVolumeInfoV2 *info)

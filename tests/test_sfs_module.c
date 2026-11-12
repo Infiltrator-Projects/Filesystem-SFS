@@ -31,6 +31,22 @@ static void make_root(uint32_t block,uint16_t serial) {
     be32(p+108u,4u);be32(p+112u,5u);
     be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
 }
+static void make_bitmap(void) {
+    unsigned char *p=media+SFS_BLOCK; /* root bitmap_base = 1 */
+    memset(p,0,SFS_BLOCK);
+    be32(p,UINT32_C(0x42544d50)); /* BTMP */
+    be32(p+8u,1u);
+    for(unsigned bit=0u;bit<SFS_TOTAL;++bit)
+        p[IFS_SFS_BLOCK_HEADER_SIZE+(bit>>3u)] |=
+            (unsigned char)(0x80u>>(bit&7u));
+    const unsigned used[]={0u,1u,2u,3u,4u,5u,15u};
+    for(unsigned i=0u;i<sizeof(used)/sizeof(used[0]);++i) {
+        const unsigned bit=used[i];
+        p[IFS_SFS_BLOCK_HEADER_SIZE+(bit>>3u)] &=
+            (unsigned char)~(0x80u>>(bit&7u));
+    }
+    be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
+}
 static uint32_t logical_sector=512u;
 static int memory_read(void *ctx,uint64_t at,void *buf,uint32_t n) {
     (void)ctx;
@@ -76,6 +92,7 @@ int main(void) {
     CHECK(core->probe(&host,&variant)==IFS_FS_NOT_FOUND);
     make_root(0u,2u);
     make_root(SFS_TOTAL-1u,3u);
+    make_bitmap();
     CHECK(core->probe(&host,&variant)==IFS_FS_OK &&
           variant==IFS_SFS_STRUCTURE_VERSION);
     IfsFsVolumeInfoV2 info={0},snapshot={0};
@@ -93,7 +110,8 @@ int main(void) {
     stale=volume;
     CHECK(info.variant==IFS_SFS_STRUCTURE_VERSION &&
           info.block_bytes==SFS_BLOCK &&
-          info.total_bytes==sizeof(media) && info.free_bytes==0u &&
+          info.total_bytes==sizeof(media) &&
+          info.free_bytes==9u*SFS_BLOCK &&
           info.max_name_bytes==IFS_SFS_MAX_FILENAME);
     snapshot.structure_bytes=sizeof(snapshot);
     CHECK(ops->query(volume,&snapshot)==IFS_FS_OK &&
@@ -103,6 +121,12 @@ int main(void) {
         CHECK(core->mount(&host,&other,&snapshot)==IFS_FS_BUSY && !other);
     }
     CHECK(core->unmount(volume)==IFS_FS_OK);
+    /* Corrupted allocation header cannot masquerade as zero free space. */
+    media[SFS_BLOCK+4u]^=1u;
+    info.structure_bytes=sizeof(info);
+    CHECK(core->mount(&host,&volume,&info)==IFS_FS_CORRUPT);
+    CHECK(!volume);
+    media[SFS_BLOCK+4u]^=1u;
     CHECK(core->unmount(stale)==IFS_FS_INVALID);
     CHECK(ops->query(stale,&snapshot)==IFS_FS_INVALID);
     /* Both roots still validate with 4Kn I/O even though the on-disk
@@ -128,6 +152,7 @@ int main(void) {
     memset(media,0,sizeof(media));
     make_root(0u,1u);
     make_root(SFS_TOTAL-1u,2u);
+    make_bitmap();
     be32(media,0x53465302u); /* foreign SFS2 primary */
     CHECK(core->probe(&host,&variant)==IFS_FS_OK); /* SFS backup */
     memset(media,0,sizeof(media));
