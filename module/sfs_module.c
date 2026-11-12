@@ -181,6 +181,9 @@ static int v2_mount(const IfsFsHostRuntimeV2 *host,void **volume,
     if(!volume || !info || info->structure_bytes<sizeof(*info))
         return IFS_FS_INVALID;
     *volume=NULL;
+    if(!ifs_fs_host_v2_valid(host))return IFS_FS_INVALID;
+    /* An exclusive writable host is never a read-only SFS mount. */
+    if(!(host->capabilities & IFS_FS_HOST_READ_ONLY))return IFS_FS_ACCESS;
     if(mounted.active || mounted.generation==UINTPTR_MAX)
         return IFS_FS_BUSY;
     rc=make_io(host,&io);
