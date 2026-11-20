@@ -60,7 +60,9 @@ if(BUILD_TESTING)
   target_link_libraries(sfs-historical-test-support PRIVATE
     InfiltratrCommon::Common OpenSSL::Crypto)
 
-  add_executable(sfs-module-test tests/test_sfs_module.c)
+  add_executable(sfs-module-test
+    tests/test_sfs_module.c
+    native/filesystems/sfs/core/sfs_core.c)
   target_include_directories(sfs-module-test PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/native/filesystems/sfs/core"
     "${infiltratr_common_SOURCE_DIR}/include")
