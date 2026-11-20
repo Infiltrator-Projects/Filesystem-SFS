@@ -118,7 +118,17 @@ int main(void) {
           snapshot.total_bytes==info.total_bytes);
     {
         void *other=NULL;
-        CHECK(core->mount(&host,&other,&snapshot)==IFS_FS_BUSY && !other);
+        IfsFsVolumeInfoV2 measured={.structure_bytes=sizeof(measured)};
+        CHECK(core->mount(&host,&other,&measured)==IFS_FS_OK &&
+              other && other!=volume);
+        CHECK(measured.total_bytes==info.total_bytes &&
+              measured.free_bytes==info.free_bytes);
+        measured.structure_bytes=sizeof(measured);
+        CHECK(ops->query(other,&measured)==IFS_FS_OK);
+        CHECK(core->unmount(other)==IFS_FS_OK);
+        measured.structure_bytes=sizeof(measured);
+        CHECK(ops->query(other,&measured)==IFS_FS_INVALID);
+        CHECK(core->unmount(other)==IFS_FS_INVALID);
     }
     CHECK(core->unmount(volume)==IFS_FS_OK);
     /* Corrupted allocation header cannot masquerade as zero free space. */

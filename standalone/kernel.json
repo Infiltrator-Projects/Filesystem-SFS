@@ -1,7 +1,1 @@
-{
-  "name": "sfs",
-  "directory": "native/filesystems/sfs/linux",
-  "paths": [
-    "native/filesystems/sfs"
-  ]
-}
+null

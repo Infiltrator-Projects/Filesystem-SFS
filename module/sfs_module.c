@@ -4,6 +4,7 @@
  * used by the source-owned kernel driver. No fallback ABI is exported.
  */
 #include <infiltratr/filesystem_module_v2.h>
+#include <infiltratr/filesystem_ro_sessions_v2.h>
 /* Readable without executing untrusted ELF code; tied to the V2 export. */
 __attribute__((used,section(".ifsmeta")))
 static const char v2_module_identity[]="IFS-MODULE:sfs:common2";
@@ -188,71 +189,45 @@ static int sfs_verified_free_blocks(const SfsCommonIo *io,
     if(rc==IFS_FS_OK)*free_count=total;
     return rc;
 }
-/* One module instance owns one immutable, validated root geometry snapshot.
- * Generation tokens prevent a stale handle from being reused after unmount. */
-static struct {
-    uintptr_t generation,active;
-    SfsRoot root;
-    uint64_t free_blocks;
-} mounted;
-static int live(void *volume)
-{
-    return mounted.active!=0u && (uintptr_t)volume==mounted.active;
-}
-static void describe(IfsFsVolumeInfoV2 *info)
-{
-    info->structure_bytes=sizeof(*info);
-    info->variant=IFS_SFS_STRUCTURE_VERSION;
-    info->block_bytes=mounted.root.block_size;
-    info->max_name_bytes=IFS_SFS_MAX_FILENAME;
-    info->total_bytes=(uint64_t)mounted.root.total_blocks*
-                      mounted.root.block_size;
-    /* Read from fully validated, checksummed on-disk allocation blocks. */
-    info->free_bytes=mounted.free_blocks*mounted.root.block_size;
-}
+/* The canonical Common V2 registry stores immutable validated metadata,
+ * never a singleton. Its opaque generation handles cannot be reused, and
+ * metadata queries after unmount are rejected without touching stale memory. */
+static IfsFsReadOnlySessionsV2 sessions = IFS_FS_RO_SESSIONS_INIT_V2;
 static int v2_mount(const IfsFsHostRuntimeV2 *host,void **volume,
                     IfsFsVolumeInfoV2 *info)
 {
     SfsCommonIo io={0};
     SfsRoot root={0};
+    IfsFsVolumeInfoV2 measured={0};
+    uint64_t counted_free=0u;
     uint32_t variant=0u;
     int rc;
     if(!volume || !info || info->structure_bytes<sizeof(*info))
         return IFS_FS_INVALID;
     *volume=NULL;
     if(!ifs_fs_host_v2_valid(host))return IFS_FS_INVALID;
-    /* An exclusive writable host is never a read-only SFS mount. */
     if(!(host->capabilities & IFS_FS_HOST_READ_ONLY))return IFS_FS_ACCESS;
-    if(mounted.active || mounted.generation==UINTPTR_MAX)
-        return IFS_FS_BUSY;
     rc=make_io(host,&io);
     if(rc!=IFS_FS_OK)return rc;
     rc=sfs_probe_native(&io,&variant,&root);
     if(rc!=IFS_FS_OK)return rc;
-    uint64_t counted_free=0u;
     rc=sfs_verified_free_blocks(&io,&root,&counted_free);
     if(rc!=IFS_FS_OK)return rc;
-    mounted.free_blocks=counted_free;
-    mounted.root=root;
-    mounted.active=++mounted.generation;
-    describe(info);
-    *volume=(void *)mounted.active;
-    return IFS_FS_OK;
+    measured.structure_bytes=sizeof(measured);
+    measured.variant=IFS_SFS_STRUCTURE_VERSION;
+    measured.block_bytes=root.block_size;
+    measured.max_name_bytes=IFS_SFS_MAX_FILENAME;
+    measured.total_bytes=(uint64_t)root.total_blocks*root.block_size;
+    measured.free_bytes=counted_free*root.block_size;
+    return ifs_fs_ro_session_open_v2(&sessions,&measured,volume,info);
 }
 static int v2_unmount(void *volume)
 {
-    if(!live(volume))return IFS_FS_INVALID;
-    mounted.active=0u;
-    memset(&mounted.root,0,sizeof(mounted.root));
-    mounted.free_blocks=0u;
-    return IFS_FS_OK;
+    return ifs_fs_ro_session_close_v2(&sessions,volume);
 }
 static int v2_volume_query(void *volume,IfsFsVolumeInfoV2 *info)
 {
-    if(!live(volume)||!info||info->structure_bytes<sizeof(*info))
-        return IFS_FS_INVALID;
-    describe(info);
-    return IFS_FS_OK;
+    return ifs_fs_ro_session_query_v2(&sessions,volume,info);
 }
 static const IfsFsCoreOpsV2 core={
     .header={IFS_FS_GROUP_ABI_V2,sizeof(IfsFsCoreOpsV2),
