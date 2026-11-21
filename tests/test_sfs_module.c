@@ -71,7 +71,7 @@ static uint32_t add_object(unsigned char *p,uint32_t at,uint32_t node,
 }
 static void make_namespace(void)
 {
-    const unsigned extra[]={6u,7u,8u,9u,11u,12u};
+    const unsigned extra[]={6u,7u,8u,9u,11u,12u,13u};
     memset(media,0,sizeof(media));
     make_root(0u,3u);make_root(SFS_TOTAL-1u,4u);
     for(unsigned i=0u;i<2u;++i) {
@@ -95,9 +95,10 @@ static void make_namespace(void)
     metadata(5u,UINT32_C(0x54524f4b)); /* clean transaction */
     metadata(6u,UINT32_C(0x424e4443)); /* extent leaf */
     p=media+6u*SFS_BLOCK;
-    be16(p+12u,2u);p[14u]=1u;p[15u]=14u;
-    be32(p+16u,9u);be16(p+28u,1u);
+    be16(p+12u,3u);p[14u]=1u;p[15u]=14u;
+    be32(p+16u,9u);be32(p+20u,13u);be16(p+28u,1u);
     be32(p+30u,12u);be16(p+42u,1u);
+    be32(p+44u,13u);be32(p+52u,9u);be16(p+56u,1u);
     be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
     metadata(7u,UINT32_C(0x4e444320));
     p=media+7u*SFS_BLOCK;
@@ -105,22 +106,25 @@ static void make_namespace(void)
     be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
     metadata(8u,UINT32_C(0x4f424a43));
     p=media+8u*SFS_BLOCK;be32(p+12u,1u);
-    uint32_t at=add_object(p,24u,3u,9u,SFS_BLOCK,0u,"KERNEL.BIN");
+    uint32_t at=add_object(p,24u,3u,9u,2u*SFS_BLOCK,0u,"KERNEL.BIN");
     add_object(p,at,4u,0u,11u,128u,"BOOT");
     be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
     metadata(11u,UINT32_C(0x4f424a43));
     p=media+11u*SFS_BLOCK;be32(p+12u,4u);
     add_object(p,24u,5u,12u,256u,0u,"INITRD.IMG");
     be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
-    for(unsigned i=0u;i<SFS_BLOCK;++i)
+    for(unsigned i=0u;i<SFS_BLOCK;++i) {
         media[9u*SFS_BLOCK+i]=(unsigned char)(i*31u+7u);
+        media[13u*SFS_BLOCK+i]=(unsigned char)((i+SFS_BLOCK)*31u+7u);
+    }
     for(unsigned i=0u;i<256u;++i)
         media[12u*SFS_BLOCK+i]=(unsigned char)(i^0xa5u);
 }
 static uint32_t logical_sector=512u;
+static int fail_reads;
 static int memory_read(void *ctx,uint64_t at,void *buf,uint32_t n) {
     (void)ctx;
-    if(at%logical_sector || n%logical_sector || n>logical_sector ||
+    if(fail_reads || at%logical_sector || n%logical_sector || n>logical_sector ||
        at>sizeof(media)||n>sizeof(media)-at)return -1;
     memcpy(buf,media+(size_t)at,n);return 0;
 }
@@ -244,7 +248,7 @@ int main(int argc,char **argv) {
     host.maximum_transfer_bytes=SFS_BLOCK;
     logical_sector=SFS_BLOCK;
     {
-        unsigned char readback[SFS_BLOCK]={0},snapshot_disk[sizeof(media)];
+        unsigned char readback[2u*SFS_BLOCK]={0},snapshot_disk[sizeof(media)];
         char name[256]={0};
         IfsFsEntryV2 entry={.structure_bytes=sizeof(entry),
                             .name=name,.name_capacity=sizeof(name)};
@@ -255,7 +259,7 @@ int main(int argc,char **argv) {
         CHECK(core->stat(volume,"/",&entry)==IFS_FS_OK &&
               entry.type==IFS_FS_ENTRY_DIRECTORY);
         CHECK(core->stat(volume,"/KERNEL.BIN",&entry)==IFS_FS_OK &&
-              entry.size_bytes==SFS_BLOCK);
+              entry.size_bytes==2u*SFS_BLOCK);
         CHECK(core->stat(volume,"/BOOT/INITRD.IMG",&entry)==IFS_FS_OK &&
               entry.size_bytes==256u);
         CHECK(core->stat(volume,"/MISSING",&entry)==IFS_FS_NOT_FOUND);
@@ -266,18 +270,32 @@ int main(int argc,char **argv) {
         CHECK(core->directory_entry(volume,"/",2u,&entry)==IFS_FS_END);
         CHECK(core->directory_entry(volume,"/BOOT",0u,&entry)==IFS_FS_OK &&
               strcmp(entry.name,"INITRD.IMG")==0);
-        CHECK(core->read(volume,"/KERNEL.BIN",0u,readback,SFS_BLOCK)==IFS_FS_OK);
-        for(unsigned i=0u;i<SFS_BLOCK;++i)
+        CHECK(core->read(volume,"/KERNEL.BIN",0u,readback,2u*SFS_BLOCK)==IFS_FS_OK);
+        for(unsigned i=0u;i<2u*SFS_BLOCK;++i)
             CHECK(readback[i]==(unsigned char)(i*31u+7u));
+        CHECK(core->read(volume,"/KERNEL.BIN",500u,readback,100u)==IFS_FS_OK);
+        for(unsigned i=0u;i<100u;++i)
+            CHECK(readback[i]==(unsigned char)((i+500u)*31u+7u));
         CHECK(core->read(volume,"/BOOT/INITRD.IMG",0u,readback,256u)==IFS_FS_OK);
         for(unsigned i=0u;i<256u;++i)
             CHECK(readback[i]==(unsigned char)(i^0xa5u));
         CHECK(core->read(volume,"/MISSING",0u,readback,1u)==IFS_FS_NOT_FOUND);
-        CHECK(core->read(volume,"/KERNEL.BIN",511u,readback,2u)==IFS_FS_INVALID);
+        CHECK(core->read(volume,"/KERNEL.BIN",2u*SFS_BLOCK-1u,readback,2u)==IFS_FS_INVALID);
+        fail_reads=1;
+        CHECK(core->read(volume,"/KERNEL.BIN",0u,readback,1u)==IFS_FS_IO_ERROR);
+        fail_reads=0;
         CHECK(memcmp(snapshot_disk,media,sizeof(media))==0);
         media[6u*SFS_BLOCK+4u]^=1u; /* extent metadata corruption */
         CHECK(core->read(volume,"/KERNEL.BIN",0u,readback,1u)==IFS_FS_CORRUPT);
         media[6u*SFS_BLOCK+4u]^=1u;
+        /* Checksum-valid extent cycles must fail native chain validation. */
+        be32(media+6u*SFS_BLOCK+20u,9u);
+        be32(media+6u*SFS_BLOCK+4u,
+             ifs_sfs_calculate_block_checksum(media+6u*SFS_BLOCK,SFS_BLOCK));
+        CHECK(core->read(volume,"/KERNEL.BIN",0u,readback,1u)==IFS_FS_CORRUPT);
+        be32(media+6u*SFS_BLOCK+20u,13u);
+        be32(media+6u*SFS_BLOCK+4u,
+             ifs_sfs_calculate_block_checksum(media+6u*SFS_BLOCK,SFS_BLOCK));
         be32(media+5u*SFS_BLOCK,UINT32_C(0x54524641)); /* pending tx */
         be32(media+5u*SFS_BLOCK+4u,
              ifs_sfs_calculate_block_checksum(media+5u*SFS_BLOCK,SFS_BLOCK));
