@@ -105,19 +105,21 @@ static int transaction_clean(const IfsSfsReader *v)
 static int object_name_utf8(const Object *o, char *output, uint32_t capacity,
                             uint32_t *written)
 {
-    uint32_t size=0;
+    uint32_t required=0u,size=0u;
+    if (!o || !output) return IFS_FS_INVALID;
+    /* Validate the complete UTF-8 byte count before copying any bytes.
+     * Returning NO_SPACE must never expose an incomplete directory name. */
+    for (uint32_t i=0u;i<o->name_bytes;++i)
+        required+=o->raw_name[i]<0x80u?1u:2u;
+    if (required>=capacity) return IFS_FS_NO_SPACE;
     for (uint32_t i=0u;i<o->name_bytes;++i) {
         const uint8_t c=o->raw_name[i];
-        uint32_t need=c<0x80u ? 1u : 2u;
-        if (need > capacity || size >= capacity-need)
-            return IFS_FS_INVALID;
-        if (need==1u) output[size++]=(char)c;
+        if (c<0x80u) output[size++]=(char)c;
         else {
             output[size++]=(char)(0xc0u|(c>>6));
             output[size++]=(char)(0x80u|(c&0x3fu));
         }
     }
-    if (size >= capacity) return IFS_FS_INVALID;
     output[size]=0;
     if (written) *written=size;
     return IFS_FS_OK;
@@ -282,7 +284,7 @@ static int fill_entry(const Object *object,IfsFsEntryV2 *entry,
         !entry->name || !entry->name_capacity)
         return IFS_FS_INVALID;
     if (root) {
-        if (entry->name_capacity<2u) return IFS_FS_INVALID;
+        if (entry->name_capacity<2u) return IFS_FS_NO_SPACE;
         entry->name[0]='/'; entry->name[1]=0; entry->name_bytes=1u;
     } else {
         int rc=object_name_utf8(object,entry->name,entry->name_capacity,
