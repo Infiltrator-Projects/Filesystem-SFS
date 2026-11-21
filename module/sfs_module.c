@@ -309,9 +309,15 @@ static const IfsFsGroupHeaderV2 *query(
     if(id==IFS_FS_GROUP_VOLUME)return &volume_ops.header;
     return NULL;
 }
+__attribute__((used,retain,section(".ifsmeta")))
+static const char identity[]="IFS-MODULE:sfs:common2";
 static const IfsFsModuleApiV2 api={
     IFS_FS_COMMON_ABI_V2,sizeof(IfsFsModuleApiV2),"sfs",
+#if defined(IFS_SFS_FIRMWARE_BUILD)
+    IFS_FS_PROFILE_FREESTANDING|IFS_FS_PROFILE_FIRMWARE,
+#else
     IFS_FS_PROFILE_HOSTED,
+#endif
     IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE)|
         IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME),query
 };
