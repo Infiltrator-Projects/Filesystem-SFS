@@ -91,8 +91,10 @@ if(BUILD_TESTING)
     "${infiltratr_common_SOURCE_DIR}/include")
   target_compile_options(sfs-module-test PRIVATE -Wall -Wextra -Wpedantic -Werror)
   target_link_libraries(sfs-module-test PRIVATE
-    sfs-driver InfiltratrCommon::Common)
+    sfs-driver InfiltratrCommon::Common ${CMAKE_DL_LIBS})
   add_test(NAME sfs-v2-multi-volume-probe-and-mount COMMAND sfs-module-test)
+  add_test(NAME sfs-freestanding-real-namespace
+    COMMAND sfs-module-test "${SFS_FIRMWARE_ELF}")
   add_test(NAME sfs-freestanding-v2-elf
     COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/tests/check_firmware_v2.sh"
       "$<TARGET_FILE:sfs-driver>" "${SFS_FIRMWARE_ELF}")

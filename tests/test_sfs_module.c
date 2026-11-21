@@ -4,6 +4,7 @@
 #include <infiltratr/filesystem_module_v2.h>
 #include "../native/filesystems/sfs/core/sfs_core.h"
 #include <stdint.h>
+#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -130,10 +131,25 @@ static int forbidden_write(void *ctx,uint64_t at,const void *src,uint32_t n)
 { (void)ctx;(void)at;(void)src;(void)n;return -1; }
 static int forbidden_flush(void *ctx)
 { (void)ctx;return -1; }
-int main(void) {
-    const IfsFsModuleApiV2 *api=infiltrator_filesystem_api_v2();
+int main(int argc,char **argv) {
+    void *firmware=NULL;
+    const IfsFsModuleApiV2 *api=NULL;
+    if(argc==2) {
+        firmware=dlopen(argv[1],RTLD_NOW|RTLD_LOCAL);
+        CHECK(firmware!=NULL);
+        void *symbol=dlsym(firmware,IFS_FS_COMMON_EXPORT_V2);
+        IfsFsModuleApiEntryV2 resolve=NULL;
+        CHECK(symbol!=NULL && sizeof(resolve)==sizeof(symbol));
+        memcpy(&resolve,&symbol,sizeof(resolve));
+        api=resolve?resolve():NULL;
+    } else {
+        CHECK(argc==1);
+        api=infiltrator_filesystem_api_v2();
+    }
     CHECK(ifs_fs_api_v2_valid(api,"sfs"));
-    CHECK(api->runtime_profiles==IFS_FS_PROFILE_HOSTED);
+    CHECK(api->runtime_profiles==(firmware?
+          (IFS_FS_PROFILE_FREESTANDING|IFS_FS_PROFILE_FIRMWARE):
+          IFS_FS_PROFILE_HOSTED));
     CHECK(api->group_mask==(IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE)|
                             IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME)));
     const IfsFsCoreOpsV2 *core=
@@ -285,6 +301,7 @@ int main(void) {
     CHECK(core->probe(&host,&variant)==IFS_FS_NOT_FOUND);
     host.logical_sector_bytes=1000u;
     CHECK(core->probe(&host,&variant)==IFS_FS_INVALID);
-    puts("SFS-STRICT-COMMON-V2-MOUNT-QUERY-PASS");
+    puts("SFS-STRICT-COMMON-V2-NAMESPACE-READ-PASS");
+    if(firmware)CHECK(dlclose(firmware)==0);
     return 0;
 }
