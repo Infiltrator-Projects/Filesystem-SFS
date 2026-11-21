@@ -182,9 +182,28 @@ static int sfs_verified_free_blocks(const SfsCommonIo *io,
                                          UINT32_C(0x42544d50))) {
             rc=IFS_FS_CORRUPT;break;
         }
-        for(uint64_t bit=0u;bit<covered;++bit)
-            total+=(block[IFS_SFS_BLOCK_HEADER_SIZE+(bit>>3u)] &
-                    (unsigned char)(0x80u>>(bit&7u)))!=0u;
+        /* A valid bitmap checksum cannot make in-use format metadata
+         * safely reusable. Reject allocation maps freeing any root,
+         * allocation bitmap, administration, object, transaction or
+         * extent-tree block required by the mounted volume. */
+        for(uint64_t bit=0u;bit<covered;++bit) {
+            const uint64_t index=first+bit;
+            const int free_bit=(block[IFS_SFS_BLOCK_HEADER_SIZE+(bit>>3u)] &
+                                (unsigned char)(0x80u>>(bit&7u)))!=0u;
+            if(free_bit &&
+               (index==0u || index==root->total_blocks-1u ||
+                (index>=root->bitmap &&
+                 index<(uint64_t)root->bitmap+bitmap_blocks) ||
+                index==root->admin || index==root->objects ||
+                index==root->extents || index==root->nodes ||
+                (root->objects<=root->total_blocks-3u &&
+                 index==(uint64_t)root->objects+2u))) {
+                rc=IFS_FS_CORRUPT;
+                break;
+            }
+            total+=(uint64_t)free_bit;
+        }
+        if(rc!=IFS_FS_OK)break;
     }
     io->release(io->context,block);
     if(rc==IFS_FS_OK)*free_count=total;

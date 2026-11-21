@@ -203,6 +203,29 @@ int main(int argc,char **argv) {
     host.capabilities=IFS_FS_HOST_READ_ONLY;
     host.write_at=NULL;host.flush=NULL;
     CHECK(ifs_fs_host_v2_valid(&host));
+    /* These are allocated SFS0 metadata blocks, not free space. Even a
+     * checksum-valid bitmap must not grant reuse of a live metadata block.
+     * Exercise actual production V2 MOUNT rather than private parsers. */
+    {
+        const unsigned critical[]={0u,1u,2u,3u,5u,6u,7u,SFS_TOTAL-1u};
+        for(unsigned i=0u;i<sizeof(critical)/sizeof(critical[0]);++i) {
+            const unsigned number=critical[i];
+            unsigned char *byte=&media[SFS_BLOCK+IFS_SFS_BLOCK_HEADER_SIZE+
+                                        (number>>3u)];
+            const unsigned char mask=(unsigned char)(0x80u>>(number&7u));
+            CHECK((*byte&mask)==0u);
+            *byte|=mask;
+            be32(media+SFS_BLOCK+4u,
+                 ifs_sfs_calculate_block_checksum(media+SFS_BLOCK,SFS_BLOCK));
+            info.structure_bytes=sizeof(info);
+            CHECK(core->mount(&host,&volume,&info)==IFS_FS_CORRUPT &&
+                  !volume);
+            *byte&=(unsigned char)~mask;
+            be32(media+SFS_BLOCK+4u,
+                 ifs_sfs_calculate_block_checksum(media+SFS_BLOCK,SFS_BLOCK));
+        }
+    }
+    info.structure_bytes=sizeof(info);
     CHECK(core->mount(&host,&volume,&info)==IFS_FS_OK && volume);
     stale=volume;
     CHECK(info.variant==IFS_SFS_STRUCTURE_VERSION &&
