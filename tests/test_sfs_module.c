@@ -47,6 +47,75 @@ static void make_bitmap(void) {
     }
     be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
 }
+/* Native SFS\0 test media with actual objects, directory chains and
+ * extent B-tree leaves, not just a valid root signature. */
+static void metadata(uint32_t block,uint32_t id)
+{
+    unsigned char *p=media+block*SFS_BLOCK;
+    memset(p,0,SFS_BLOCK);
+    be32(p,id);be32(p+8u,block);
+    be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
+}
+static uint32_t add_object(unsigned char *p,uint32_t at,uint32_t node,
+                           uint32_t data,uint32_t auxiliary,uint8_t bits,
+                           const char *name)
+{
+    size_t n=strlen(name);
+    be32(p+at+4u,node);be32(p+at+12u,data);
+    be32(p+at+16u,auxiliary);
+    p[at+24u]=bits;
+    memcpy(p+at+25u,name,n+1u);
+    p[at+25u+n+1u]=0; /* empty comment */
+    return (uint32_t)((at+25u+n+2u+1u)&~1u);
+}
+static void make_namespace(void)
+{
+    const unsigned extra[]={6u,7u,8u,9u,11u,12u};
+    memset(media,0,sizeof(media));
+    make_root(0u,3u);make_root(SFS_TOTAL-1u,4u);
+    for(unsigned i=0u;i<2u;++i) {
+        unsigned char *p=media+(i?SFS_TOTAL-1u:0u)*SFS_BLOCK;
+        be32(p+108u,6u);be32(p+112u,7u);
+        be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
+    }
+    make_bitmap();
+    unsigned char *p=media+SFS_BLOCK;
+    for(unsigned i=0u;i<sizeof(extra)/sizeof(extra[0]);++i) {
+        unsigned bit=extra[i];
+        p[12u+(bit>>3u)]&=(unsigned char)~(0x80u>>(bit&7u));
+    }
+    be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
+    metadata(2u,UINT32_C(0x41444d43)); /* admin-space */
+    metadata(3u,UINT32_C(0x4f424a43)); /* root container */
+    p=media+3u*SFS_BLOCK;
+    add_object(p,24u,1u,4u,8u,128u,"VOLUME");
+    be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
+    metadata(4u,UINT32_C(0x48544142)); /* HTAB */
+    metadata(5u,UINT32_C(0x54524f4b)); /* clean transaction */
+    metadata(6u,UINT32_C(0x424e4443)); /* extent leaf */
+    p=media+6u*SFS_BLOCK;
+    be16(p+12u,2u);p[14u]=1u;p[15u]=14u;
+    be32(p+16u,9u);be16(p+28u,1u);
+    be32(p+30u,12u);be16(p+42u,1u);
+    be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
+    metadata(7u,UINT32_C(0x4e444320));
+    p=media+7u*SFS_BLOCK;
+    be32(p+12u,1u);be32(p+16u,1u);
+    be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
+    metadata(8u,UINT32_C(0x4f424a43));
+    p=media+8u*SFS_BLOCK;be32(p+12u,1u);
+    uint32_t at=add_object(p,24u,3u,9u,SFS_BLOCK,0u,"KERNEL.BIN");
+    add_object(p,at,4u,0u,11u,128u,"BOOT");
+    be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
+    metadata(11u,UINT32_C(0x4f424a43));
+    p=media+11u*SFS_BLOCK;be32(p+12u,4u);
+    add_object(p,24u,5u,12u,256u,0u,"INITRD.IMG");
+    be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
+    for(unsigned i=0u;i<SFS_BLOCK;++i)
+        media[9u*SFS_BLOCK+i]=(unsigned char)(i*31u+7u);
+    for(unsigned i=0u;i<256u;++i)
+        media[12u*SFS_BLOCK+i]=(unsigned char)(i^0xa5u);
+}
 static uint32_t logical_sector=512u;
 static int memory_read(void *ctx,uint64_t at,void *buf,uint32_t n) {
     (void)ctx;
@@ -71,9 +140,12 @@ int main(void) {
         (const IfsFsCoreOpsV2 *)ifs_fs_group_v2(api,IFS_FS_GROUP_CORE);
     const IfsFsVolumeOpsV2 *ops=
         (const IfsFsVolumeOpsV2 *)ifs_fs_group_v2(api,IFS_FS_GROUP_VOLUME);
-    CHECK(core && core->header.capabilities==(IFS_FS_CORE_PROBE|IFS_FS_CORE_MOUNT));
+    CHECK(core && core->header.capabilities==
+          (IFS_FS_CORE_PROBE|IFS_FS_CORE_MOUNT|IFS_FS_CORE_STAT|
+           IFS_FS_CORE_LIST|IFS_FS_CORE_READ));
     CHECK(core->probe && core->mount && core->unmount &&
-          !core->read && !core->write);
+          core->stat && core->directory_entry && core->read &&
+          !core->write);
     CHECK(ops && ops->header.capabilities==IFS_FS_VOLUME_QUERY &&
           ops->query && !ops->format && !ops->repair);
     IfsFsHostRuntimeV2 host={0};
@@ -155,6 +227,50 @@ int main(void) {
     host.physical_sector_bytes=SFS_BLOCK;
     host.maximum_transfer_bytes=SFS_BLOCK;
     logical_sector=SFS_BLOCK;
+    {
+        unsigned char readback[SFS_BLOCK]={0},snapshot_disk[sizeof(media)];
+        char name[256]={0};
+        IfsFsEntryV2 entry={.structure_bytes=sizeof(entry),
+                            .name=name,.name_capacity=sizeof(name)};
+        make_namespace();
+        memcpy(snapshot_disk,media,sizeof(media));
+        info.structure_bytes=sizeof(info);
+        CHECK(core->mount(&host,&volume,&info)==IFS_FS_OK && volume);
+        CHECK(core->stat(volume,"/",&entry)==IFS_FS_OK &&
+              entry.type==IFS_FS_ENTRY_DIRECTORY);
+        CHECK(core->stat(volume,"/KERNEL.BIN",&entry)==IFS_FS_OK &&
+              entry.size_bytes==SFS_BLOCK);
+        CHECK(core->stat(volume,"/BOOT/INITRD.IMG",&entry)==IFS_FS_OK &&
+              entry.size_bytes==256u);
+        CHECK(core->stat(volume,"/MISSING",&entry)==IFS_FS_NOT_FOUND);
+        CHECK(core->directory_entry(volume,"/",0u,&entry)==IFS_FS_OK &&
+              strcmp(entry.name,"KERNEL.BIN")==0);
+        CHECK(core->directory_entry(volume,"/",1u,&entry)==IFS_FS_OK &&
+              strcmp(entry.name,"BOOT")==0);
+        CHECK(core->directory_entry(volume,"/",2u,&entry)==IFS_FS_END);
+        CHECK(core->directory_entry(volume,"/BOOT",0u,&entry)==IFS_FS_OK &&
+              strcmp(entry.name,"INITRD.IMG")==0);
+        CHECK(core->read(volume,"/KERNEL.BIN",0u,readback,SFS_BLOCK)==IFS_FS_OK);
+        for(unsigned i=0u;i<SFS_BLOCK;++i)
+            CHECK(readback[i]==(unsigned char)(i*31u+7u));
+        CHECK(core->read(volume,"/BOOT/INITRD.IMG",0u,readback,256u)==IFS_FS_OK);
+        for(unsigned i=0u;i<256u;++i)
+            CHECK(readback[i]==(unsigned char)(i^0xa5u));
+        CHECK(core->read(volume,"/MISSING",0u,readback,1u)==IFS_FS_NOT_FOUND);
+        CHECK(core->read(volume,"/KERNEL.BIN",511u,readback,2u)==IFS_FS_INVALID);
+        CHECK(memcmp(snapshot_disk,media,sizeof(media))==0);
+        media[6u*SFS_BLOCK+4u]^=1u; /* extent metadata corruption */
+        CHECK(core->read(volume,"/KERNEL.BIN",0u,readback,1u)==IFS_FS_CORRUPT);
+        media[6u*SFS_BLOCK+4u]^=1u;
+        be32(media+5u*SFS_BLOCK,UINT32_C(0x54524641)); /* pending tx */
+        be32(media+5u*SFS_BLOCK+4u,
+             ifs_sfs_calculate_block_checksum(media+5u*SFS_BLOCK,SFS_BLOCK));
+        CHECK(core->stat(volume,"/KERNEL.BIN",&entry)==IFS_FS_UNSUPPORTED);
+        CHECK(core->unmount(volume)==IFS_FS_OK);
+        volume=NULL;
+        memset(media,0,sizeof(media));
+        make_root(0u,2u);make_root(SFS_TOTAL-1u,3u);make_bitmap();
+    }
     media[4u]^=0x40u;
     CHECK(core->probe(&host,&variant)==IFS_FS_OK); /* valid backup */
     media[SFS_BLOCK*(SFS_TOTAL-1u)+4u]^=0x40u;
