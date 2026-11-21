@@ -71,7 +71,7 @@ static uint32_t add_object(unsigned char *p,uint32_t at,uint32_t node,
 }
 static void make_namespace(void)
 {
-    const unsigned extra[]={6u,7u,8u,9u,11u,12u,13u};
+    const unsigned extra[]={6u,7u,8u,9u,11u,12u,10u,13u};
     memset(media,0,sizeof(media));
     make_root(0u,3u);make_root(SFS_TOTAL-1u,4u);
     for(unsigned i=0u;i<2u;++i) {
@@ -105,9 +105,12 @@ static void make_namespace(void)
     be32(p+12u,1u);be32(p+16u,1u);
     be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
     metadata(8u,UINT32_C(0x4f424a43));
-    p=media+8u*SFS_BLOCK;be32(p+12u,1u);
-    uint32_t at=add_object(p,24u,3u,9u,2u*SFS_BLOCK,0u,"KERNEL.BIN");
-    add_object(p,at,4u,0u,11u,128u,"BOOT");
+    p=media+8u*SFS_BLOCK;be32(p+12u,1u);be32(p+16u,10u);
+    add_object(p,24u,3u,9u,2u*SFS_BLOCK,0u,"KERNEL.BIN");
+    be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
+    metadata(10u,UINT32_C(0x4f424a43));
+    p=media+10u*SFS_BLOCK;be32(p+12u,1u);be32(p+20u,8u);
+    add_object(p,24u,4u,0u,11u,128u,"BOOT");
     be32(p+4u,ifs_sfs_calculate_block_checksum(p,SFS_BLOCK));
     metadata(11u,UINT32_C(0x4f424a43));
     p=media+11u*SFS_BLOCK;be32(p+12u,4u);
@@ -205,7 +208,7 @@ int main(int argc,char **argv) {
     CHECK(info.variant==IFS_SFS_STRUCTURE_VERSION &&
           info.block_bytes==SFS_BLOCK &&
           info.total_bytes==sizeof(media) &&
-          info.free_bytes==2u*SFS_BLOCK &&
+          info.free_bytes==1u*SFS_BLOCK &&
           info.max_name_bytes==IFS_SFS_MAX_FILENAME);
     snapshot.structure_bytes=sizeof(snapshot);
     CHECK(ops->query(volume,&snapshot)==IFS_FS_OK &&
@@ -287,6 +290,14 @@ int main(int argc,char **argv) {
         CHECK(core->read(volume,"/KERNEL.BIN",0u,readback,1u)==IFS_FS_IO_ERROR);
         fail_reads=0;
         CHECK(memcmp(snapshot_disk,media,sizeof(media))==0);
+        /* A checksum-valid linked-container backlink mismatch is corruption. */
+        be32(media+10u*SFS_BLOCK+20u,7u);
+        be32(media+10u*SFS_BLOCK+4u,
+             ifs_sfs_calculate_block_checksum(media+10u*SFS_BLOCK,SFS_BLOCK));
+        CHECK(core->directory_entry(volume,"/",1u,&entry)==IFS_FS_CORRUPT);
+        be32(media+10u*SFS_BLOCK+20u,8u);
+        be32(media+10u*SFS_BLOCK+4u,
+             ifs_sfs_calculate_block_checksum(media+10u*SFS_BLOCK,SFS_BLOCK));
         media[6u*SFS_BLOCK+4u]^=1u; /* extent metadata corruption */
         CHECK(core->read(volume,"/KERNEL.BIN",0u,readback,1u)==IFS_FS_CORRUPT);
         media[6u*SFS_BLOCK+4u]^=1u;
