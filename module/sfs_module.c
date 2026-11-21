@@ -7,7 +7,7 @@
 #include <infiltratr/filesystem_ro_sessions_v2.h>
 #include "sfs_reader.h"
 /* Readable without executing untrusted ELF code; tied to the V2 export. */
-__attribute__((used,section(".ifsmeta")))
+__attribute__((used,retain,section(".ifsmeta")))
 static const char v2_module_identity[]="IFS-MODULE:sfs:common2";
 
 #include "../native/filesystems/sfs/core/sfs_core.h"
@@ -309,8 +309,6 @@ static const IfsFsGroupHeaderV2 *query(
     if(id==IFS_FS_GROUP_VOLUME)return &volume_ops.header;
     return NULL;
 }
-__attribute__((used,retain,section(".ifsmeta")))
-static const char identity[]="IFS-MODULE:sfs:common2";
 static const IfsFsModuleApiV2 api={
     IFS_FS_COMMON_ABI_V2,sizeof(IfsFsModuleApiV2),"sfs",
 #if defined(IFS_SFS_FIRMWARE_BUILD)
