@@ -226,6 +226,17 @@ static int v2_mount(const IfsFsHostRuntimeV2 *host,void **volume,
     if(rc!=IFS_FS_OK)return rc;
     rc=sfs_verified_free_blocks(&io,&root,&counted_free);
     if(rc!=IFS_FS_OK)return rc;
+    IfsSfsReader verify={0};
+    size_t n=host->structure_bytes<sizeof(verify.host)?
+             host->structure_bytes:sizeof(verify.host);
+    memcpy(&verify.host,host,n);
+    verify.host.structure_bytes=(uint32_t)n;
+    verify.block_bytes=root.block_size;
+    verify.total_blocks=root.total_blocks;
+    verify.object_root=root.objects;
+    verify.extent_root=root.extents;
+    rc=ifs_sfs_ro_validate(&verify);
+    if(rc!=IFS_FS_OK)return rc;
     measured.structure_bytes=sizeof(measured);
     measured.variant=IFS_SFS_STRUCTURE_VERSION;
     measured.block_bytes=root.block_size;

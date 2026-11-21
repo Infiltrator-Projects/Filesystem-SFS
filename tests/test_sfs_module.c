@@ -190,6 +190,8 @@ int main(int argc,char **argv) {
     IfsFsVolumeInfoV2 info={0},snapshot={0};
     void *volume=NULL,*stale=NULL;
     info.structure_bytes=sizeof(info);
+    CHECK(core->mount(&host,&volume,&info)==IFS_FS_CORRUPT && !volume);
+    make_namespace();
     host.capabilities=IFS_FS_HOST_EXCLUSIVE|IFS_FS_HOST_DURABLE;
     host.write_at=forbidden_write;host.flush=forbidden_flush;
     CHECK(ifs_fs_host_v2_valid(&host));
@@ -203,7 +205,7 @@ int main(int argc,char **argv) {
     CHECK(info.variant==IFS_SFS_STRUCTURE_VERSION &&
           info.block_bytes==SFS_BLOCK &&
           info.total_bytes==sizeof(media) &&
-          info.free_bytes==9u*SFS_BLOCK &&
+          info.free_bytes==2u*SFS_BLOCK &&
           info.max_name_bytes==IFS_SFS_MAX_FILENAME);
     snapshot.structure_bytes=sizeof(snapshot);
     CHECK(ops->query(volume,&snapshot)==IFS_FS_OK &&
