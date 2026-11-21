@@ -5,6 +5,7 @@
  */
 #include <infiltratr/filesystem_module_v2.h>
 #include <infiltratr/filesystem_ro_sessions_v2.h>
+#include "sfs_reader.h"
 /* Readable without executing untrusted ELF code; tied to the V2 export. */
 __attribute__((used,section(".ifsmeta")))
 static const char v2_module_identity[]="IFS-MODULE:sfs:common2";
@@ -193,6 +194,18 @@ static int sfs_verified_free_blocks(const SfsCommonIo *io,
  * never a singleton. Its opaque generation handles cannot be reused, and
  * metadata queries after unmount are rejected without touching stale memory. */
 static IfsFsReadOnlySessionsV2 sessions = IFS_FS_RO_SESSIONS_INIT_V2;
+static struct { uintptr_t cookie; IfsSfsReader reader; }
+readers[IFS_FS_RO_MAX_SESSIONS_V2];
+static const IfsSfsReader *reader_for(void *handle)
+{
+    uintptr_t token=(uintptr_t)handle;
+    if (!token) return NULL;
+    for (uint32_t i=0;i<IFS_FS_RO_MAX_SESSIONS_V2;++i)
+        if (readers[i].cookie==token &&
+            sessions.slots[i].cookie==token)
+            return &readers[i].reader;
+    return NULL;
+}
 static int v2_mount(const IfsFsHostRuntimeV2 *host,void **volume,
                     IfsFsVolumeInfoV2 *info)
 {
@@ -219,20 +232,68 @@ static int v2_mount(const IfsFsHostRuntimeV2 *host,void **volume,
     measured.max_name_bytes=IFS_SFS_MAX_FILENAME;
     measured.total_bytes=(uint64_t)root.total_blocks*root.block_size;
     measured.free_bytes=counted_free*root.block_size;
-    return ifs_fs_ro_session_open_v2(&sessions,&measured,volume,info);
+    rc=ifs_fs_ro_session_open_v2(&sessions,&measured,volume,info);
+    if(rc!=IFS_FS_OK)return rc;
+    ifs_fs_ro_sessions_lock_v2(&sessions);
+    for(uint32_t i=0u;i<IFS_FS_RO_MAX_SESSIONS_V2;++i) {
+        if(sessions.slots[i].cookie==(uintptr_t)*volume) {
+            IfsSfsReader *reader=&readers[i].reader;
+            size_t n=host->structure_bytes<sizeof(reader->host)?
+                     host->structure_bytes:sizeof(reader->host);
+            memset(reader,0,sizeof(*reader));
+            memcpy(&reader->host,host,n);
+            reader->host.structure_bytes=(uint32_t)n;
+            reader->block_bytes=root.block_size;
+            reader->total_blocks=root.total_blocks;
+            reader->object_root=root.objects;
+            reader->extent_root=root.extents;
+            readers[i].cookie=(uintptr_t)*volume;
+            break;
+        }
+    }
+    ifs_fs_ro_sessions_unlock_v2(&sessions);
+    return IFS_FS_OK;
 }
 static int v2_unmount(void *volume)
 {
-    return ifs_fs_ro_session_close_v2(&sessions,volume);
+    int rc=ifs_fs_ro_session_close_v2(&sessions,volume);
+    if(rc!=IFS_FS_OK)return rc;
+    ifs_fs_ro_sessions_lock_v2(&sessions);
+    for(uint32_t i=0;i<IFS_FS_RO_MAX_SESSIONS_V2;++i)
+        if(readers[i].cookie==(uintptr_t)volume) {
+            readers[i].cookie=0u;
+            memset(&readers[i].reader,0,sizeof(readers[i].reader));
+            break;
+        }
+    ifs_fs_ro_sessions_unlock_v2(&sessions);
+    return IFS_FS_OK;
 }
 static int v2_volume_query(void *volume,IfsFsVolumeInfoV2 *info)
 {
     return ifs_fs_ro_session_query_v2(&sessions,volume,info);
 }
+static int stat_path(void *volume,const char *path,IfsFsEntryV2 *entry)
+{
+    const IfsSfsReader *r=reader_for(volume);
+    return r?ifs_sfs_ro_stat(r,path,entry):IFS_FS_INVALID;
+}
+static int list_path(void *volume,const char *path,uint32_t nth,IfsFsEntryV2 *entry)
+{
+    const IfsSfsReader *r=reader_for(volume);
+    return r?ifs_sfs_ro_list(r,path,nth,entry):IFS_FS_INVALID;
+}
+static int read_file(void *volume,const char *path,uint64_t offset,
+                     void *dest,uint32_t bytes)
+{
+    const IfsSfsReader *r=reader_for(volume);
+    return r?ifs_sfs_ro_read(r,path,offset,dest,bytes):IFS_FS_INVALID;
+}
 static const IfsFsCoreOpsV2 core={
     .header={IFS_FS_GROUP_ABI_V2,sizeof(IfsFsCoreOpsV2),
-             IFS_FS_GROUP_CORE,0u,IFS_FS_CORE_PROBE|IFS_FS_CORE_MOUNT},
-    .probe=v2_probe,.mount=v2_mount,.unmount=v2_unmount
+             IFS_FS_GROUP_CORE,0u,IFS_FS_CORE_PROBE|IFS_FS_CORE_MOUNT|
+             IFS_FS_CORE_STAT|IFS_FS_CORE_LIST|IFS_FS_CORE_READ},
+    .probe=v2_probe,.mount=v2_mount,.unmount=v2_unmount,
+    .stat=stat_path,.directory_entry=list_path,.read=read_file
 };
 static const IfsFsVolumeOpsV2 volume_ops={
     .header={IFS_FS_GROUP_ABI_V2,sizeof(IfsFsVolumeOpsV2),

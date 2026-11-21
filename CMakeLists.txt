@@ -21,7 +21,7 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/version.h"
 # Actual Common V2 SFS0 root/bitmap decoder and canonical core only.
 # The host-service V1 worker is retained but not part of the installed ELF.
 add_library(sfs-driver SHARED
-  module/sfs_module.c
+  module/sfs_module.c module/sfs_reader.c
   native/filesystems/sfs/core/sfs_core.c)
 set_target_properties(sfs-driver PROPERTIES
   PREFIX "" OUTPUT_NAME "SFS" SUFFIX ".so" C_VISIBILITY_PRESET hidden)
@@ -38,7 +38,7 @@ if(BUILD_TESTING)
   add_library(sfs-historical-test-support SHARED
     native/sfs_native.c
     native/sfs_worker.c
-    module/sfs_module.c
+    module/sfs_module.c module/sfs_reader.c
     compat/legacy_services.c
     native/filesystems/sfs/core/sfs_core.c
     fixtures/sfs_codec.c
