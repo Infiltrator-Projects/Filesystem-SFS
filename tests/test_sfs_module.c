@@ -330,6 +330,19 @@ int main(int argc,char **argv) {
         CHECK(core->read(volume,"/KERNEL.BIN",0u,readback,1u)==IFS_FS_IO_ERROR);
         fail_reads=0;
         CHECK(memcmp(snapshot_disk,media,sizeof(media))==0);
+        /* A later, separately checksummed child can reuse the earlier
+         * case-folded name. A V2 path must refuse the ambiguous identity. */
+        {
+            unsigned char *later=media+10u*SFS_BLOCK;
+            memset(later+24u,0,SFS_BLOCK-24u);
+            add_object(later,24u,4u,0u,11u,128u,"kernel.bin");
+            be32(later+4u,ifs_sfs_calculate_block_checksum(later,SFS_BLOCK));
+            CHECK(core->stat(volume,"/KERNEL.BIN",&entry)==IFS_FS_CORRUPT);
+            CHECK(core->read(volume,"/KERNEL.BIN",0u,readback,1u)
+                  ==IFS_FS_CORRUPT);
+            memcpy(later,snapshot_disk+10u*SFS_BLOCK,SFS_BLOCK);
+            CHECK(core->stat(volume,"/BOOT",&entry)==IFS_FS_OK);
+        }
         /* A checksum-valid linked-container backlink mismatch is corruption. */
         be32(media+10u*SFS_BLOCK+20u,7u);
         be32(media+10u*SFS_BLOCK+4u,
