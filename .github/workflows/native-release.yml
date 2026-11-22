@@ -41,6 +41,19 @@ jobs:
           test "$(find "$RUNNER_TEMP/root" -type f | wc -l)" = 2
           bash tests/check_v2_exports.sh "$RUNNER_TEMP/root/System/Filesystems/SFS.so"
           test "$(find "$RUNNER_TEMP/root" -name '*.ko' | wc -l)" = 0
+      - name: Verify exact embedded SFS V2 firmware namespace from each packaged installer
+        run: |
+          set -euo pipefail
+          check="$RUNNER_TEMP/sfs-firmware-verify"
+          cmake -S . -B "$check" -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$check" --target sfs-module-test sfs-firmware-elf --parallel 2
+          for root in portable root; do
+            carrier="$RUNNER_TEMP/$root/System/Filesystems/SFS.so"
+            payload="$RUNNER_TEMP/$root-firmware.so"
+            objcopy --dump-section ".infiltrator_boot=$payload" "$carrier"
+            cmp -- "$payload" "$check/firmware/SFS.so"
+            "$check/sfs-module-test" "$payload"
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: SFS-hosted-v2-qualification-only
