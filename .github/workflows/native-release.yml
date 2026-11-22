@@ -46,3 +46,32 @@ jobs:
           name: SFS-hosted-v2-qualification-only
           path: dist/*
           if-no-files-found: error
+  publish:
+    needs: qualify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: SFS-hosted-v2-qualification-only
+          path: dist
+      - name: Publish immutable qualified hosted V2 packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="$(tr -d '\r\n' < VERSION)"
+          tag="v$version"
+          test "$(find dist -maxdepth 1 -type f -name '*.deb' | wc -l)" -eq 1
+          test "$(find dist -maxdepth 1 -type f -name '*.run' | wc -l)" -eq 1
+          test "$(find dist -maxdepth 1 -type f -name '*.ko' | wc -l)" -eq 0
+          if gh release view "$tag" --json tagName >/dev/null 2>&1; then
+            echo "Existing immutable release $tag preserved"
+            exit 0
+          fi
+          gh release create "$tag" dist/*.deb dist/*.run --target "$GITHUB_SHA" \
+            --title "SFS hosted Common V2 filesystem release $version" \
+            --notes "SFS Common V2-only hosted filesystem module and manual; old public V1 and filesystem-specific kernel-module assets are excluded. This is NOT a fully qualified BOOT release."
