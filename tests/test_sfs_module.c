@@ -125,8 +125,17 @@ static void make_namespace(void)
 }
 static uint32_t logical_sector=512u;
 static int fail_reads;
+static const IfsFsCoreOpsV2 *unmount_during_read;
+static void *active_volume;
+static int observed_unmount;
 static int memory_read(void *ctx,uint64_t at,void *buf,uint32_t n) {
     (void)ctx;
+    if (unmount_during_read) {
+        const IfsFsCoreOpsV2 *ops=unmount_during_read;
+        unmount_during_read=NULL;
+        observed_unmount=ops->unmount(active_volume);
+        if (observed_unmount!=IFS_FS_BUSY) return -1;
+    }
     if(fail_reads || at%logical_sector || n%logical_sector || n>logical_sector ||
        at>sizeof(media)||n>sizeof(media)-at)return -1;
     memcpy(buf,media+(size_t)at,n);return 0;
@@ -315,7 +324,13 @@ int main(int argc,char **argv) {
         CHECK(core->directory_entry(volume,"/",2u,&entry)==IFS_FS_END);
         CHECK(core->directory_entry(volume,"/BOOT",0u,&entry)==IFS_FS_OK &&
               strcmp(entry.name,"INITRD.IMG")==0);
+        /* Reentrant host callback: a live read must pin its session
+         * without holding the registry lock during host I/O. */
+        active_volume=volume;
+        unmount_during_read=core;
+        observed_unmount=IFS_FS_INVALID;
         CHECK(core->read(volume,"/KERNEL.BIN",0u,readback,2u*SFS_BLOCK)==IFS_FS_OK);
+        CHECK(!unmount_during_read && observed_unmount==IFS_FS_BUSY);
         for(unsigned i=0u;i<2u*SFS_BLOCK;++i)
             CHECK(readback[i]==(unsigned char)(i*31u+7u));
         CHECK(core->read(volume,"/KERNEL.BIN",500u,readback,100u)==IFS_FS_OK);
