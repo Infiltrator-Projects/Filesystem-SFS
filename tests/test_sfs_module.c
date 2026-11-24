@@ -178,7 +178,7 @@ int main(int argc,char **argv) {
     CHECK(core->probe && core->mount && core->unmount &&
           core->stat && core->directory_entry && core->read &&
           !core->write);
-    CHECK(ops && ops->header.capabilities==(IFS_FS_VOLUME_QUERY|(firmware?0u:IFS_FS_VOLUME_FORMAT)) &&
+    CHECK(ops && ops->header.capabilities==(IFS_FS_VOLUME_QUERY|IFS_FS_VOLUME_LABEL_GET|(firmware?0u:IFS_FS_VOLUME_FORMAT)) &&
           ops->query && ((ops->format!=NULL)==(!firmware)) && !ops->repair);
     IfsFsHostRuntimeV2 host={0};
     host.abi_version=IFS_FS_HOST_ABI_V2;
@@ -293,6 +293,13 @@ int main(int argc,char **argv) {
         memcpy(snapshot_disk,media,sizeof(media));
         info.structure_bytes=sizeof(info);
         CHECK(core->mount(&host,&volume,&info)==IFS_FS_OK && volume);
+        char label[32],tiny[2]={'X','X'};
+        uint32_t label_bytes=UINT32_MAX;
+        CHECK(ops->label && !ops->set_label &&
+              ops->label(volume,label,sizeof(label),&label_bytes)==IFS_FS_OK &&
+              label_bytes==6u && !strcmp(label,"VOLUME"));
+        CHECK(ops->label(volume,tiny,sizeof(tiny),&label_bytes)==IFS_FS_NO_SPACE &&
+              !label_bytes && tiny[0]=='X' && tiny[1]=='X');
         CHECK(core->stat(volume,"/",&entry)==IFS_FS_OK &&
               entry.type==IFS_FS_ENTRY_DIRECTORY);
         /* Both Common V2 STAT and LIST refuse insufficient output space
