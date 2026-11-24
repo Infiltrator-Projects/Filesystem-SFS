@@ -83,6 +83,11 @@ if(BUILD_TESTING)
   target_link_libraries(sfs-historical-test-support PRIVATE
     InfiltratrCommon::Common OpenSSL::Crypto)
 
+  add_executable(sfs-native-format-test tests/test_format.c)
+  target_link_libraries(sfs-native-format-test PRIVATE InfiltratrCommon::Common ${CMAKE_DL_LIBS})
+  target_compile_options(sfs-native-format-test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  add_test(NAME sfs-native-format COMMAND sh "${CMAKE_CURRENT_SOURCE_DIR}/tests/format_media.sh"
+    "$<TARGET_FILE:sfs-native-format-test>" "$<TARGET_FILE:sfs-driver>")
   add_executable(sfs-module-test
     tests/test_sfs_module.c
     native/filesystems/sfs/core/sfs_core.c)

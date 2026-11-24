@@ -178,8 +178,8 @@ int main(int argc,char **argv) {
     CHECK(core->probe && core->mount && core->unmount &&
           core->stat && core->directory_entry && core->read &&
           !core->write);
-    CHECK(ops && ops->header.capabilities==IFS_FS_VOLUME_QUERY &&
-          ops->query && !ops->format && !ops->repair);
+    CHECK(ops && ops->header.capabilities==(IFS_FS_VOLUME_QUERY|(firmware?0u:IFS_FS_VOLUME_FORMAT)) &&
+          ops->query && ((ops->format!=NULL)==(!firmware)) && !ops->repair);
     IfsFsHostRuntimeV2 host={0};
     host.abi_version=IFS_FS_HOST_ABI_V2;
     host.structure_bytes=sizeof(host);
