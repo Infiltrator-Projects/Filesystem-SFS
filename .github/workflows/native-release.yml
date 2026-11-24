@@ -46,9 +46,10 @@ jobs:
           set -euo pipefail
           check="$RUNNER_TEMP/sfs-firmware-verify"
           cmake -S . -B "$check" -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
-          cmake --build "$check" --target sfs-module-test sfs-firmware-elf --parallel 2
+          cmake --build "$check" --target sfs-module-test sfs-firmware-elf sfs-native-format-test --parallel 2
           for root in portable root; do
             carrier="$RUNNER_TEMP/$root/System/Filesystems/SFS.so"
+            sh tests/format_media.sh "$check/sfs-native-format-test" "$carrier"
             payload="$RUNNER_TEMP/$root-firmware.so"
             objcopy --dump-section ".infiltrator_boot=$payload" "$carrier"
             cmp -- "$payload" "$check/firmware/SFS.so"
