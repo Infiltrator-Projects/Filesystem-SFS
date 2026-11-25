@@ -39,19 +39,23 @@ typedef struct {
     void (*release)(void *,void *);
 } SfsCommonIo;
 static int sfs_root(const SfsCommonIo *h, uint32_t block_size,
-                    uint32_t block_number, SfsRoot *out) {
+                    uint32_t block_number, SfsRoot *out, int *valid) {
     unsigned char *block;
-    int valid = 0;
+    int rc;
+    *valid = 0;
     uint64_t position;
     if(!h || !h->allocate || !h->release || !h->read_at || !out ||
        block_size<512u || block_size>65536u ||
-       (block_size&(block_size-1u)))return 0;
+       (block_size&(block_size-1u)))return IFS_FS_INVALID;
     position=(uint64_t)block_number*block_size;
     if(position>h->volume_bytes ||
-       block_size>h->volume_bytes-position)return 0;
+       block_size>h->volume_bytes-position)return IFS_FS_OK;
     block=h->allocate(h->context,block_size);
-    if(!block)return 0;
-    if(h->read_at(h->context,position,block,block_size)==0 &&
+    if(!block)return IFS_FS_NO_MEMORY;
+    /* A transport failure is not evidence of an absent root. Preserve
+     * the Common V2 status separately from the on-media validity bit. */
+    rc=h->read_at(h->context,position,block,block_size);
+    if(rc==IFS_FS_OK &&
        ifs_sfs_validate_block_header(block,block_size,block_number,
                                     IFS_SFS_ROOT_ID)) {
         SfsRoot root={sfs_be32(block+52u),sfs_be32(block+48u),
@@ -67,25 +71,27 @@ static int sfs_root(const SfsCommonIo *h, uint32_t block_size,
            (uint64_t)root.total_blocks*block_size<=h->volume_bytes &&
            (block_number==0u || block_number==root.total_blocks-1u)) {
             *out=root;
-            valid=1;
+            *valid=1;
         }
     }
     h->release(h->context,block);
-    return valid;
+    return rc;
 }
 static int sfs_probe_native(const SfsCommonIo *h,uint32_t *variant,
                             SfsRoot *selected) {
     SfsRoot first={0}, last={0};
-    int primary=0, backup=0;
+    int primary=0, backup=0, rc;
     if(!h||!h->read_at||!variant ||
        !h->allocate||!h->release||h->volume_bytes<3u*512u)
         return IFS_FS_INVALID;
     /* Prefer true root geometry, then try a verified last-block backup for
      * media with a damaged primary. Never reinterpret SFS2 as SFS0. */
     for(uint32_t bs=512u;bs<=65536u;bs<<=1u) {
-        if(sfs_root(h,bs,0u,&first)) {
-            primary=1;
-            backup=sfs_root(h,bs,first.total_blocks-1u,&last);
+        rc=sfs_root(h,bs,0u,&first,&primary);
+        if(rc!=IFS_FS_OK)return rc;
+        if(primary) {
+            rc=sfs_root(h,bs,first.total_blocks-1u,&last,&backup);
+            if(rc!=IFS_FS_OK)return rc;
             break;
         }
     }
@@ -94,8 +100,10 @@ static int sfs_probe_native(const SfsCommonIo *h,uint32_t *variant,
             uint64_t blocks=h->volume_bytes/bs;
             if(h->volume_bytes%bs || blocks<3u || blocks>UINT32_MAX)
                 continue;
-            if(sfs_root(h,bs,(uint32_t)blocks-1u,&last) &&
-               last.total_blocks==blocks) {
+            int candidate_valid=0;
+            rc=sfs_root(h,bs,(uint32_t)blocks-1u,&last,&candidate_valid);
+            if(rc!=IFS_FS_OK)return rc;
+            if(candidate_valid && last.total_blocks==blocks) {
                 backup=1;
                 break;
             }
@@ -123,7 +131,7 @@ static int sfs_probe_native(const SfsCommonIo *h,uint32_t *variant,
 static int v2_read(void *context,uint64_t at,void *buffer,uint32_t bytes)
 {
     const IfsFsHostRuntimeV2 *host=context;
-    return ifs_fs_host_read_bytes_v2(host,at,buffer,bytes)==IFS_FS_OK?0:-1;
+    return ifs_fs_host_read_bytes_v2(host,at,buffer,bytes);
 }
 static void *v2_allocate(void *context,size_t bytes)
 {
@@ -176,10 +184,9 @@ static int sfs_verified_free_blocks(const SfsCommonIo *io,
         uint64_t first=(uint64_t)group*bits_per;
         uint64_t covered=root->total_blocks-first;
         if(covered>bits_per)covered=bits_per;
-        if(io->read_at(io->context,(uint64_t)number*root->block_size,
-                       block,root->block_size)!=0) {
-            rc=IFS_FS_IO_ERROR;break;
-        }
+        rc=io->read_at(io->context,(uint64_t)number*root->block_size,
+                       block,root->block_size);
+        if(rc!=IFS_FS_OK)break;
         if(!ifs_sfs_validate_block_header(block,root->block_size,number,
                                          UINT32_C(0x42544d50))) {
             rc=IFS_FS_CORRUPT;break;

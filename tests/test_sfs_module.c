@@ -124,7 +124,8 @@ static void make_namespace(void)
         media[12u*SFS_BLOCK+i]=(unsigned char)(i^0xa5u);
 }
 static uint32_t logical_sector=512u;
-static int fail_reads;
+static int fail_reads, fail_allocations;
+static uint64_t fail_at=UINT64_MAX;
 static const IfsFsCoreOpsV2 *unmount_during_read;
 static void *active_volume;
 static int observed_unmount;
@@ -136,11 +137,12 @@ static int memory_read(void *ctx,uint64_t at,void *buf,uint32_t n) {
         observed_unmount=ops->unmount(active_volume);
         if (observed_unmount!=IFS_FS_BUSY) return -1;
     }
-    if(fail_reads || at%logical_sector || n%logical_sector || n>logical_sector ||
+    if(fail_reads || at==fail_at || at%logical_sector || n%logical_sector || n>logical_sector ||
        at>sizeof(media)||n>sizeof(media)-at)return -1;
     memcpy(buf,media+(size_t)at,n);return 0;
 }
-static void *memory_alloc(void *ctx,size_t bytes) {(void)ctx;return malloc(bytes);}
+static void *memory_alloc(void *ctx,size_t bytes)
+{ (void)ctx;return fail_allocations?NULL:malloc(bytes); }
 static void memory_free(void *ctx,void *p) {(void)ctx;free(p);}
 
 static int forbidden_write(void *ctx,uint64_t at,const void *src,uint32_t n)
@@ -204,6 +206,16 @@ int main(int argc,char **argv) {
     info.structure_bytes=sizeof(info);
     CHECK(core->mount(&host,&volume,&info)==IFS_FS_CORRUPT && !volume);
     make_namespace();
+    /* A valid backup that cannot be read must not disappear from probe
+     * results. Allocation failures also retain their distinct V2 status. */
+    fail_at=(SFS_TOTAL-1u)*SFS_BLOCK;
+    CHECK(core->probe(&host,&variant)==IFS_FS_IO_ERROR);
+    CHECK(core->mount(&host,&volume,&info)==IFS_FS_IO_ERROR && !volume);
+    fail_at=UINT64_MAX;
+    fail_allocations=1;
+    CHECK(core->probe(&host,&variant)==IFS_FS_NO_MEMORY);
+    CHECK(core->mount(&host,&volume,&info)==IFS_FS_NO_MEMORY && !volume);
+    fail_allocations=0;
     host.capabilities=IFS_FS_HOST_EXCLUSIVE|IFS_FS_HOST_DURABLE;
     host.write_at=forbidden_write;host.flush=forbidden_flush;
     CHECK(ifs_fs_host_v2_valid(&host));
