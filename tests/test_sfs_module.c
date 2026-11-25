@@ -169,7 +169,12 @@ int main(int argc,char **argv) {
           (IFS_FS_PROFILE_FREESTANDING|IFS_FS_PROFILE_FIRMWARE):
           IFS_FS_PROFILE_HOSTED));
     CHECK(api->group_mask==(IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE)|
-                            IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME)));
+                            IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME)|
+                            (firmware?0u:IFS_FS_GROUP_BIT(IFS_FS_GROUP_DEFRAG))));
+    const IfsFsDefragOpsV2 *defrag=
+        (const IfsFsDefragOpsV2 *)ifs_fs_group_v2(api,IFS_FS_GROUP_DEFRAG);
+    CHECK(firmware?!defrag:(defrag && defrag->header.capabilities==IFS_FS_DEFRAG_MAP &&
+          defrag->map && !defrag->plan && !defrag->execute));
     const IfsFsCoreOpsV2 *core=
         (const IfsFsCoreOpsV2 *)ifs_fs_group_v2(api,IFS_FS_GROUP_CORE);
     const IfsFsVolumeOpsV2 *ops=
@@ -358,6 +363,21 @@ int main(int argc,char **argv) {
         CHECK(core->read(volume,"/BOOT/INITRD.IMG",0u,readback,256u)==IFS_FS_OK);
         for(unsigned i=0u;i<256u;++i)
             CHECK(readback[i]==(unsigned char)(i^0xa5u));
+        if(defrag) {
+            IfsFsExtentV2 extent={0};
+            uint32_t count=99u;
+            CHECK(defrag->map(volume,"/KERNEL.BIN",0u,&extent,1u,&count)==IFS_FS_OK &&
+                  count==1u && extent.logical_offset==0u &&
+                  extent.physical_offset==9u*SFS_BLOCK && extent.length==SFS_BLOCK);
+            CHECK(defrag->map(volume,"/KERNEL.BIN",1u,&extent,1u,&count)==IFS_FS_OK &&
+                  count==1u && extent.logical_offset==SFS_BLOCK &&
+                  extent.physical_offset==13u*SFS_BLOCK && extent.length==SFS_BLOCK);
+            CHECK(defrag->map(volume,"/KERNEL.BIN",2u,&extent,1u,&count)==IFS_FS_END && !count);
+            CHECK(defrag->map(volume,"/BOOT/INITRD.IMG",0u,&extent,1u,&count)==IFS_FS_OK &&
+                  count==1u && extent.physical_offset==12u*SFS_BLOCK && extent.length==256u);
+            CHECK(defrag->map(volume,"/MISSING",0u,&extent,1u,&count)==IFS_FS_NOT_FOUND && !count);
+            CHECK(defrag->map(volume,"/",0u,&extent,1u,&count)==IFS_FS_INVALID && !count);
+        }
         CHECK(core->read(volume,"/MISSING",0u,readback,1u)==IFS_FS_NOT_FOUND);
         CHECK(core->read(volume,"/KERNEL.BIN",2u*SFS_BLOCK-1u,readback,2u)==IFS_FS_INVALID);
         fail_reads=1;
@@ -387,6 +407,11 @@ int main(int argc,char **argv) {
              ifs_sfs_calculate_block_checksum(media+10u*SFS_BLOCK,SFS_BLOCK));
         media[6u*SFS_BLOCK+4u]^=1u; /* extent metadata corruption */
         CHECK(core->read(volume,"/KERNEL.BIN",0u,readback,1u)==IFS_FS_CORRUPT);
+        if(defrag) {
+            IfsFsExtentV2 extent={0};
+            uint32_t count=99u;
+            CHECK(defrag->map(volume,"/KERNEL.BIN",0u,&extent,1u,&count)==IFS_FS_CORRUPT && !count);
+        }
         media[6u*SFS_BLOCK+4u]^=1u;
         /* Checksum-valid extent cycles must fail native chain validation. */
         be32(media+6u*SFS_BLOCK+20u,9u);

@@ -497,3 +497,43 @@ int ifs_sfs_ro_read(const IfsSfsReader *v,const char *path,
     }
     return remaining ? IFS_FS_CORRUPT : IFS_FS_OK;
 }
+
+/* Hosted Common V2 extent enumeration uses exactly the same validated native
+ * object and B-tree chain as CORE.READ. A page is never returned until the
+ * entire chain has been checked; a short page is not the terminal END. */
+int ifs_sfs_ro_map(const IfsSfsReader *v,const char *path,uint64_t first,
+                   IfsFsExtentV2 *out,uint32_t capacity,uint32_t *written)
+{
+    if(!written)return IFS_FS_INVALID;
+    *written=0u;
+    if(!out || !capacity)return IFS_FS_INVALID;
+    Object file;
+    int rc=resolve(v,path,&file);
+    if(rc!=IFS_FS_OK)return rc;
+    if(file.bits&TYPE_DIRECTORY)return IFS_FS_INVALID;
+    if(file.bits&(TYPE_LINK|TYPE_HARDLINK))return IFS_FS_UNSUPPORTED;
+    uint64_t blocks=0u;
+    rc=check_file_extents(v,&file,&blocks);
+    if(rc!=IFS_FS_OK)return rc;
+    uint64_t index=0u,logical=0u;
+    uint32_t key=file.first_extent,previous=0u,count=0u;
+    while(key) {
+        Extent e;
+        rc=extent_lookup(v,key,&e);
+        if(rc!=IFS_FS_OK)return rc;
+        if(e.prev!=previous || logical>=file.length)return IFS_FS_CORRUPT;
+        uint64_t length=(uint64_t)e.blocks*v->block_bytes;
+        if(length>file.length-logical)length=file.length-logical;
+        if(index>=first) {
+            out[count++]=(IfsFsExtentV2){logical,
+                (uint64_t)e.key*v->block_bytes,length,0u,0u};
+            if(count==capacity)break;
+        }
+        logical+=length;
+        ++index;
+        previous=e.key;
+        key=e.next;
+    }
+    *written=count;
+    return count?IFS_FS_OK:IFS_FS_END;
+}

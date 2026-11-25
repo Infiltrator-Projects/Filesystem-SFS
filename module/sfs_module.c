@@ -541,6 +541,22 @@ static int v2_mount(const IfsFsHostRuntimeV2 *h,void **volume,IfsFsVolumeInfoV2 
     return rc;
 }
 
+#if !defined(IFS_SFS_FIRMWARE_BUILD)
+static int map_path(void *volume,const char *path,uint64_t first,
+                    IfsFsExtentV2 *out,uint32_t capacity,uint32_t *written)
+{
+    if(!written)return IFS_FS_INVALID;
+    *written=0u;
+    SfsSession *session=acquire_reader(volume);
+    return session?finish_reader(session,ifs_sfs_ro_map(&session->reader,path,
+                       first,out,capacity,written)):IFS_FS_INVALID;
+}
+static const IfsFsDefragOpsV2 defrag_ops={
+    .header={IFS_FS_GROUP_ABI_V2,sizeof(defrag_ops),IFS_FS_GROUP_DEFRAG,0u,
+             IFS_FS_DEFRAG_MAP},
+    .map=map_path
+};
+#endif
 static const IfsFsCoreOpsV2 core={
     .header={IFS_FS_GROUP_ABI_V2,sizeof(IfsFsCoreOpsV2),
              IFS_FS_GROUP_CORE,0u,IFS_FS_CORE_PROBE|IFS_FS_CORE_MOUNT|
@@ -575,6 +591,9 @@ static const IfsFsGroupHeaderV2 *query(
         return NULL;
     if(id==IFS_FS_GROUP_CORE)return &core.header;
     if(id==IFS_FS_GROUP_VOLUME)return &volume_ops.header;
+#if !defined(IFS_SFS_FIRMWARE_BUILD)
+    if(id==IFS_FS_GROUP_DEFRAG)return &defrag_ops.header;
+#endif
     return NULL;
 }
 static const IfsFsModuleApiV2 api={
@@ -585,7 +604,11 @@ static const IfsFsModuleApiV2 api={
     IFS_FS_PROFILE_HOSTED,
 #endif
     IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE)|
-        IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME),query
+        IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME)
+#if !defined(IFS_SFS_FIRMWARE_BUILD)
+        |IFS_FS_GROUP_BIT(IFS_FS_GROUP_DEFRAG)
+#endif
+        ,query
 };
 __attribute__((visibility("default")))
 const IfsFsModuleApiV2 *infiltrator_filesystem_api_v2(void)
