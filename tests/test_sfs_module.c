@@ -170,11 +170,16 @@ int main(int argc,char **argv) {
           IFS_FS_PROFILE_HOSTED));
     CHECK(api->group_mask==(IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE)|
                             IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME)|
-                            (firmware?0u:IFS_FS_GROUP_BIT(IFS_FS_GROUP_DEFRAG))));
+                            (firmware?0u:(IFS_FS_GROUP_BIT(IFS_FS_GROUP_DEFRAG)|
+                                           IFS_FS_GROUP_BIT(IFS_FS_GROUP_ALLOCATION)))));
     const IfsFsDefragOpsV2 *defrag=
         (const IfsFsDefragOpsV2 *)ifs_fs_group_v2(api,IFS_FS_GROUP_DEFRAG);
     CHECK(firmware?!defrag:(defrag && defrag->header.capabilities==IFS_FS_DEFRAG_MAP &&
           defrag->map && !defrag->plan && !defrag->execute));
+    const IfsFsAllocationOpsV2 *allocation=
+        (const IfsFsAllocationOpsV2 *)ifs_fs_group_v2(api,IFS_FS_GROUP_ALLOCATION);
+    CHECK(firmware?!allocation:(allocation && allocation->map &&
+          allocation->header.capabilities==IFS_FS_ALLOCATION_MAP));
     const IfsFsCoreOpsV2 *core=
         (const IfsFsCoreOpsV2 *)ifs_fs_group_v2(api,IFS_FS_GROUP_CORE);
     const IfsFsVolumeOpsV2 *ops=
@@ -259,6 +264,31 @@ int main(int argc,char **argv) {
           info.total_bytes==sizeof(media) &&
           info.free_bytes==1u*SFS_BLOCK &&
           info.max_name_bytes==IFS_SFS_MAX_FILENAME);
+    /* The fixture has exactly one free block (14); all other blocks
+     * belong to its known native metadata or file extents. Test paginated
+     * allocation against this independently constructed layout. */
+    if(allocation) {
+        uint64_t at=0,unknown=0,free_bytes=0;
+        for(;;) {
+            IfsFsAllocationRangeV2 range={0};
+            uint32_t written=99;
+            uint64_t next=at;
+            int rc=allocation->map(volume,at,&range,1u,&written);
+            CHECK(ifs_fs_allocation_page_v2_valid(sizeof(media),at,rc,&range,
+                  1u,written,&next,&unknown));
+            if(rc==IFS_FS_END)break;
+            CHECK(next>at && range.physical_offset%SFS_BLOCK==0 &&
+                  range.length%SFS_BLOCK==0);
+            for(uint64_t block=at/SFS_BLOCK;block<next/SFS_BLOCK;++block)
+                CHECK(range.state==(block==14u?IFS_FS_SPACE_FREE:IFS_FS_SPACE_ALLOCATED));
+            if(range.state==IFS_FS_SPACE_FREE)free_bytes+=range.length;
+            at=next;
+        }
+        CHECK(at==sizeof(media)&&!unknown&&free_bytes==info.free_bytes);
+        uint32_t written=99;
+        IfsFsAllocationRangeV2 range={0};
+        CHECK(allocation->map(volume,sizeof(media)+1u,&range,1u,&written)==IFS_FS_INVALID&&!written);
+    }
     snapshot.structure_bytes=sizeof(snapshot);
     CHECK(ops->query(volume,&snapshot)==IFS_FS_OK &&
           snapshot.total_bytes==info.total_bytes);
