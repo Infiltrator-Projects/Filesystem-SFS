@@ -29,8 +29,10 @@ The target installation is `/System/Filesystems/SFS.so` and `/System/Resources/D
 - [Provider implementation](module/sfs_module.c)
 - [Native design](native/filesystems/sfs/DESIGN.md)
 - [Migration and source history](MIGRATION_STATUS.md)
-- [Original-format reference source](docs/SFS.pages) and [PDF](docs/SFS.pdf)
+- [Original-format reference source](docs/SFS.pdfstreams) and [PDF](docs/SFS.pdf)
 - [Project philosophy](docs/PHILOSOPHY.md)
 - [Common ABI](https://github.com/Infiltrator-Projects/Libraries)
 
 The original-format reference and historical migration notes describe different evidence from the current production provider. When descriptions disagree, the current exported descriptor, implementation, executable tests and exact-revision release evidence take precedence.
+
+The [engineering reference](docs/SFS-TECHNICAL-REFERENCE.md) adds field-level original-format guidance. Earlier material is preserved in the PDF.
