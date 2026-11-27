@@ -4,6 +4,8 @@
 
 Smart File System is an Amiga filesystem developed by John Hendrikx, with later development by Ralph Schmidt and others. This reference treats SFS/0 (binary identifier 0x53465300), structure version 3, separately from SFS/2. It uses a block-indexed object namespace, linked extents held in a B-tree, allocation bitmaps and reserved administrative space. The pinned evidence is the original ASFS Linux implementation preserved in this repository and the independent amipart format writer preserved in the SFS2 repository. Neither an Amiga DOS volume nor a later SFS2 volume is admitted solely by a common prefix.
 
+SFS emerged in the late 1990s as an Amiga alternative to OFS/FFS, targeting more responsive directories and recoverable metadata updates. The AmigaOS ecosystem recognises SFS as a separate format, not a DOS-type variation of FFS.
+
 ## Root copies and geometry
 
 All persistent numeric fields in these Amiga SFS profiles are big-endian. Root copies occur at block 0 and the last volume block. A common block header has four-byte ID at 0, checksum at 4 and self block at 8. Root fields: version 12 and sequence 14 (16-bit), creation date 16, flags byte 20, partition first and exclusive last byte positions 32 and 40 (64-bit), total blocks 48, block bytes 52, bitmap start 96, admin-space container 100, root object container 104, extent tree root 108, object-node tree root 112. Validate both root copies with native checksum, self identity, actual volume length, block size and all referenced regions; a larger sequence is not enough if the referenced state is corrupt. Compare sequence rollover using independently established native rules. Addresses inside the volume are partition-relative block numbers.
@@ -34,7 +36,15 @@ SFS-family metadata uses transaction storage and markers TRST, TRFA and TROK. In
 
 ## Independent verification
 
-Test authentic Amiga SFS media, both root copies, block-size boundaries, long names, native case comparison, multiple object containers, extent tree depth, fragmented files, admin-space exhaustion, allocation mismatch and dirty transaction state. For each file compare logical byte length and payload hash against an independent reader. Verify full metadata ownership, not just extent data, and inject interruption after every write phase. A formatter must establish matching root copies, bitmap and admin allocation, root object and node indexes, extent tree and clean transaction metadata. Source-level evidence is not runtime proof. Prior manual follows as historical provenance.
+Test authentic Amiga SFS media, both root copies, block-size boundaries, long names, native case comparison, multiple object containers, extent tree depth, fragmented files, admin-space exhaustion, allocation mismatch and dirty transaction state. For each file compare logical byte length and payload hash against an independent reader. Verify full metadata ownership, not just extent data, and inject interruption after every write phase. A formatter must establish matching root copies, bitmap and admin allocation, root object and node indexes, extent tree and clean transaction metadata. Source-level evidence is not runtime proof. 
+
+## Implementation and qualification boundary
+
+Historical qualification record 45516221620 documents the provider's then-declared probe, mount, namespace read and format, with I/O and allocation failure distinguished from format rejection. A formatter does not establish writable namespace or transactional relocation.
+
+Common V2 is the independent provider interface: https://github.com/Infiltrator-Projects/Libraries/blob/main/docs/FILESYSTEM_COMMON_ABI_V2.md . Negotiate real operation masks and media profiles. Use bounded host I/O, exclusive unmounted ownership and durable flush for mutation; distinguish unsupported, corrupt, I/O and stale-handle results. Test Media and Defragmenter use the same engine only for supported operations. Hosted, freestanding, BOOT, kernel, recovery and package qualification are independent. Current capability and release status belongs to the repository README and exact-source qualification records; historical evidence is not a current status claim.
+
+Historical source or test reference: https://github.com/Infiltrator-Projects/Filesystem-SFS/actions/runs/45516221620 .
 
 ## Source boundary
 

@@ -1,495 +1,203 @@
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.01 0.52 0.56 rg 50 747 116 5 re f
-1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
-BT /F2 21 Tf 50 775 Td (SFS - technical reference) Tj ET
-0.05 0.13 0.22 rg BT /F2 14 Tf 50 715 Td (History and version boundary) Tj ET
-BT /F1 11 Tf 15 TL 50 685 Td
-(Smart File System is an Amiga filesystem developed by John Hendrikx, with) Tj
-T* (later development by Ralph Schmidt and others. This reference treats SFS/0) Tj
-T* (\(binary identifier 0x53465300\), structure version 3, separately from SFS/2.) Tj
-T* (It uses a block-indexed object namespace, linked extents held in a B-tree,) Tj
-T* (allocation bitmaps and reserved administrative space. The pinned evidence is) Tj
-T* (the original ASFS Linux implementation preserved in this repository and the) Tj
-T* (independent amipart format writer preserved in the SFS2 repository. Neither) Tj
-T* (an Amiga DOS volume nor a later SFS2 volume is admitted solely by a common) Tj
-T* (prefix.) Tj
-ET
-0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 1 | Original format, not provider qualification) Tj ET
+0.06 0.15 0.23 rg 0 768 595 74 re f
+1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
+BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
+0.08 0.14 0.20 rg BT /F2 18 Tf 43 736 Td (Contents) Tj ET
+0.08 0.14 0.20 rg BT /F1 11 Tf 43 711 Td (1. History and version boundary) Tj ET
+0.08 0.14 0.20 rg BT /F1 11 Tf 43 695 Td (2. Root copies and geometry) Tj ET
+0.08 0.14 0.20 rg BT /F1 11 Tf 43 679 Td (3. SFS/0 checksum and object layout) Tj ET
+0.08 0.14 0.20 rg BT /F1 11 Tf 43 663 Td (4. Allocation bitmap and admin space) Tj ET
+0.08 0.14 0.20 rg BT /F1 11 Tf 43 647 Td (5. Object containers and identity) Tj ET
+0.08 0.14 0.20 rg BT /F1 11 Tf 43 631 Td (6. Object-node index and namespace) Tj ET
+0.08 0.14 0.20 rg BT /F1 11 Tf 43 615 Td (7. Extent B-tree and worked mapping) Tj ET
+0.08 0.14 0.20 rg BT /F1 11 Tf 43 599 Td (8. Transactions, mutation and recovery) Tj ET
+0.08 0.14 0.20 rg BT /F1 11 Tf 43 583 Td (9. Independent verification) Tj ET
+0.08 0.14 0.20 rg BT /F1 11 Tf 43 567 Td (10. Implementation and qualification boundary) Tj ET
+0.08 0.14 0.20 rg BT /F1 11 Tf 43 551 Td (11. Source boundary) Tj ET
+0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 1) Tj ET
 
 %%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.01 0.52 0.56 rg 50 747 116 5 re f
-1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
-BT /F2 21 Tf 50 775 Td (SFS - technical reference) Tj ET
-0.05 0.13 0.22 rg BT /F2 14 Tf 50 715 Td (Root copies and geometry) Tj ET
-BT /F1 11 Tf 15 TL 50 685 Td
-(All persistent numeric fields in these Amiga SFS profiles are big-endian.) Tj
-T* (Root copies occur at block 0 and the last volume block. A common block) Tj
-T* (header has four-byte ID at 0, checksum at 4 and self block at 8. Root) Tj
-T* (fields: version 12 and sequence 14 \(16-bit\), creation date 16, flags byte) Tj
-T* (20, partition first and exclusive last byte positions 32 and 40 \(64-bit\),) Tj
-T* (total blocks 48, block bytes 52, bitmap start 96, admin-space container 100,) Tj
-T* (root object container 104, extent tree root 108, object-node tree root 112.) Tj
-T* (Validate both root copies with native checksum, self identity, actual volume) Tj
-T* (length, block size and all referenced regions; a larger sequence is not) Tj
-T* (enough if the referenced state is corrupt. Compare sequence rollover using) Tj
-T* (independently established native rules. Addresses inside the volume are) Tj
-T* (partition-relative block numbers.) Tj
-ET
-0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 2 | Original format, not provider qualification) Tj ET
+0.06 0.15 0.23 rg 0 768 595 74 re f
+1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
+BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
+0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (1. History and version boundary) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (Smart File System is an Amiga filesystem developed by John Hendrikx, with later) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (development by Ralph Schmidt and others. This reference treats SFS/0 \(binary) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (identifier 0x53465300\), structure version 3, separately from SFS/2. It uses a) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (block-indexed object namespace, linked extents held in a B-tree, allocation bitmaps) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (and reserved administrative space. The pinned evidence is the original ASFS Linux) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (implementation preserved in this repository and the independent amipart format) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (writer preserved in the SFS2 repository. Neither an Amiga DOS volume nor a later) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (SFS2 volume is admitted solely by a common prefix.) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 584 Td (SFS emerged in the late 1990s as an Amiga alternative to OFS/FFS, targeting more) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 570 Td (responsive directories and recoverable metadata updates. The AmigaOS ecosystem) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 556 Td (recognises SFS as a separate format, not a DOS-type variation of FFS.) Tj ET
+0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 2) Tj ET
 
 %%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.01 0.52 0.56 rg 50 747 116 5 re f
-1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
-BT /F2 21 Tf 50 775 Td (SFS - technical reference) Tj ET
-0.05 0.13 0.22 rg BT /F2 14 Tf 50 715 Td (SFS/0 checksum and object layout) Tj ET
-BT /F1 11 Tf 15 TL 50 685 Td
-(SFS/0 checksum at byte 4 is the negative modulo-2^32 sum of 1 plus every) Tj
-T* (other big-endian 32-bit word. The complete valid metadata block sums to) Tj
-T* (0xFFFFFFFF. Check full B bytes, not a fixed 512-byte prefix. The SFS/0 file) Tj
-T* (size is a 32-bit word at object byte 16, modification date at 20, type flags) Tj
-T* (at 24, name begins 25. The SFS/0 extent leaf is 14 bytes: physical start 0,) Tj
-T* (next 4, previous 8, 16-bit block count 12. Do not substitute SFS2's 16-byte) Tj
-T* (leaf or 48-bit length. Dates and permissions follow native Amiga semantics;) Tj
-T* (preserve unknown fields. Format arithmetic limits do not guarantee) Tj
-T* (historical handler or device compatibility.) Tj
-ET
-0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 3 | Original format, not provider qualification) Tj ET
+0.06 0.15 0.23 rg 0 768 595 74 re f
+1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
+BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
+0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (2. Root copies and geometry) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (All persistent numeric fields in these Amiga SFS profiles are big-endian. Root) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (copies occur at block 0 and the last volume block. A common block header has) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (four-byte ID at 0, checksum at 4 and self block at 8. Root fields: version 12 and) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (sequence 14 \(16-bit\), creation date 16, flags byte 20, partition first and) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (exclusive last byte positions 32 and 40 \(64-bit\), total blocks 48, block bytes 52,) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (bitmap start 96, admin-space container 100, root object container 104, extent tree) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (root 108, object-node tree root 112. Validate both root copies with native) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (checksum, self identity, actual volume length, block size and all referenced) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 594 Td (regions; a larger sequence is not enough if the referenced state is corrupt.) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 580 Td (Compare sequence rollover using independently established native rules. Addresses) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 566 Td (inside the volume are partition-relative block numbers.) Tj ET
+0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 3) Tj ET
 
 %%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.01 0.52 0.56 rg 50 747 116 5 re f
-1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
-BT /F2 21 Tf 50 775 Td (SFS - technical reference) Tj ET
-0.05 0.13 0.22 rg BT /F2 14 Tf 50 715 Td (Allocation bitmap and admin space) Tj ET
-BT /F1 11 Tf 15 TL 50 685 Td
-(A BTMP block has a 12-byte common header, then big-endian bitmap words; set) Tj
-T* (bits mean free, with bit 31 first in each word. A B-byte bitmap represents) Tj
-T* (8*\(B-12\) blocks. For B=512, coverage is 4000 blocks. Block 4100 uses bitmap) Tj
-T* (block index 1, local bit 100, word 3, bit position 27 \(mask 0x08000000\); add) Tj
-T* (the root bitmap base to the bitmap block index. Check final padding and) Tj
-T* (reserve root copies, admin space and transaction blocks. ADMC records have) Tj
-T* (next/previous at 12/16, flag byte 20, then eight-byte pairs from 24) Tj
-T* (containing block address and used mask. Unlike the general bitmap, set bits) Tj
-T* (in admin masks denote used blocks. Reconcile both levels: available internal) Tj
-T* (metadata slots are not unreserved free data blocks.) Tj
-ET
-0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 4 | Original format, not provider qualification) Tj ET
+0.06 0.15 0.23 rg 0 768 595 74 re f
+1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
+BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
+0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (3. SFS/0 checksum and object layout) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (SFS/0 checksum at byte 4 is the negative modulo-2^32 sum of 1 plus every other) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (big-endian 32-bit word. The complete valid metadata block sums to 0xFFFFFFFF. Check) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (full B bytes, not a fixed 512-byte prefix. The SFS/0 file size is a 32-bit word at) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (object byte 16, modification date at 20, type flags at 24, name begins 25. The) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (SFS/0 extent leaf is 14 bytes: physical start 0, next 4, previous 8, 16-bit block) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (count 12. Do not substitute SFS2's 16-byte leaf or 48-bit length. Dates and) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (permissions follow native Amiga semantics; preserve unknown fields. Format) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (arithmetic limits do not guarantee historical handler or device compatibility.) Tj ET
+0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 4) Tj ET
 
 %%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.01 0.52 0.56 rg 50 747 116 5 re f
-1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
-BT /F2 21 Tf 50 775 Td (SFS - technical reference) Tj ET
-0.05 0.13 0.22 rg BT /F2 14 Tf 50 715 Td (Object containers and identity) Tj ET
-BT /F1 11 Tf 15 TL 50 685 Td
-(OBJC blocks have parent at 12, next at 16, previous at 20, and variable) Tj
-T* (object records from 24. Root node ID is 1; recycled node ID is 2. An object) Tj
-T* (record has UID/GID at 0/2, object-node ID at 4, protection at 8, a) Tj
-T* (type-dependent pair of words at 12/16: first extent and size encoding for a) Tj
-T* (file, hash-table pointer and first directory container for a directory.) Tj
-T* (Validate chain owner and reciprocal previous link, bounded record size and) Tj
-T* (unique node identity. Names and comments are adjacent NUL-terminated native) Tj
-T* (byte strings, with records rounded up to an even size. Reject missing) Tj
-T* (terminators or overlong names, not merely a missing final padding byte.) Tj
-T* (Object type flags include hidden 1, hard link 32, link 64 and directory 128;) Tj
-T* (interpret the union only after checking type.) Tj
-ET
-0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 5 | Original format, not provider qualification) Tj ET
+0.06 0.15 0.23 rg 0 768 595 74 re f
+1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
+BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
+0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (4. Allocation bitmap and admin space) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (A BTMP block has a 12-byte common header, then big-endian bitmap words; set bits) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (mean free, with bit 31 first in each word. A B-byte bitmap represents 8*\(B-12\)) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (blocks. For B=512, coverage is 4000 blocks. Block 4100 uses bitmap block index 1,) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (local bit 100, word 3, bit position 27 \(mask 0x08000000\); add the root bitmap base) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (to the bitmap block index. Check final padding and reserve root copies, admin space) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (and transaction blocks. ADMC records have next/previous at 12/16, flag byte 20,) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (then eight-byte pairs from 24 containing block address and used mask. Unlike the) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (general bitmap, set bits in admin masks denote used blocks. Reconcile both levels:) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 594 Td (available internal metadata slots are not unreserved free data blocks.) Tj ET
+0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 5) Tj ET
 
 %%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.01 0.52 0.56 rg 50 747 116 5 re f
-1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
-BT /F2 21 Tf 50 775 Td (SFS - technical reference) Tj ET
-0.05 0.13 0.22 rg BT /F2 14 Tf 50 715 Td (Object-node index and namespace) Tj ET
-BT /F1 11 Tf 15 TL 50 685 Td
-(NDC \(space in fourth byte\) containers hold base node number at 12, coverage) Tj
-T* (value at 16 and entries from 20. Internal node pointers and ten-byte leaf) Tj
-T* (object-node records have different meanings; a leaf contains) Tj
-T* (object-container location, next collision node and 16-bit hash. HTAB blocks) Tj
-T* (hold parent at 12 and 32-bit bucket pointers from 16. Derive bucket capacity) Tj
-T* (from \(B-16\)/4; use the native hash and comparison policy and follow) Tj
-T* (validated collision chains. Compare exact bounded names after hash matches.) Tj
-T* (An independent reader may enumerate the authoritative OBJC chain instead of) Tj
-T* (relying on an optional hash index, but must detect duplicate names and) Tj
-T* (loops. Root flags include case-sensitive bit 7. Use the actual native) Tj
-T* (comparison semantics, not a host filesystem's Unicode rules.) Tj
-ET
-0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 6 | Original format, not provider qualification) Tj ET
+0.06 0.15 0.23 rg 0 768 595 74 re f
+1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
+BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
+0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (5. Object containers and identity) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (OBJC blocks have parent at 12, next at 16, previous at 20, and variable object) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (records from 24. Root node ID is 1; recycled node ID is 2. An object record has) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (UID/GID at 0/2, object-node ID at 4, protection at 8, a type-dependent pair of) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (words at 12/16: first extent and size encoding for a file, hash-table pointer and) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (first directory container for a directory. Validate chain owner and reciprocal) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (previous link, bounded record size and unique node identity. Names and comments are) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (adjacent NUL-terminated native byte strings, with records rounded up to an even) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (size. Reject missing terminators or overlong names, not merely a missing final) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 594 Td (padding byte. Object type flags include hidden 1, hard link 32, link 64 and) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 580 Td (directory 128; interpret the union only after checking type.) Tj ET
+0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 6) Tj ET
 
 %%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.01 0.52 0.56 rg 50 747 116 5 re f
-1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
-BT /F2 21 Tf 50 775 Td (SFS - technical reference) Tj ET
-0.05 0.13 0.22 rg BT /F2 14 Tf 50 715 Td (Extent B-tree and worked mapping) Tj ET
-BT /F1 11 Tf 15 TL 50 685 Td
-(BNDC blocks have node count at 12 \(16 bits\), leaf flag 14, stride 15;) Tj
-T* (records begin at 16. Internal records contain big-endian lower-bound key and) Tj
-T* (child block \(eight bytes\). Leaf key is the physical start of a contiguous) Tj
-T* (extent, with next and previous extent keys at 4 and 8. Search by the wanted) Tj
-T* (key, taking the greatest lower-bound internal key, then require an exact) Tj
-T* (leaf match. Follow the file's first extent and subsequent next links in) Tj
-T* (logical order; validate previous links, length, range, allocation and) Tj
-T* (cycles. For a 4096-byte block and a file with run \(100,3\) followed by) Tj
-T* (\(500,2\), logical byte 14000 is 1712 bytes into the second run, at partition) Tj
-T* (byte 2049712. Clip to logical EOF and distinguish raw payload from B-tree) Tj
-T* (metadata.) Tj
-ET
-0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 7 | Original format, not provider qualification) Tj ET
+0.06 0.15 0.23 rg 0 768 595 74 re f
+1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
+BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
+0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (6. Object-node index and namespace) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (NDC \(space in fourth byte\) containers hold base node number at 12, coverage value) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (at 16 and entries from 20. Internal node pointers and ten-byte leaf object-node) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (records have different meanings; a leaf contains object-container location, next) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (collision node and 16-bit hash. HTAB blocks hold parent at 12 and 32-bit bucket) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (pointers from 16. Derive bucket capacity from \(B-16\)/4; use the native hash and) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (comparison policy and follow validated collision chains. Compare exact bounded) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (names after hash matches. An independent reader may enumerate the authoritative) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (OBJC chain instead of relying on an optional hash index, but must detect duplicate) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 594 Td (names and loops. Root flags include case-sensitive bit 7. Use the actual native) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 580 Td (comparison semantics, not a host filesystem's Unicode rules.) Tj ET
+0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 7) Tj ET
 
 %%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.01 0.52 0.56 rg 50 747 116 5 re f
-1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
-BT /F2 21 Tf 50 775 Td (SFS - technical reference) Tj ET
-0.05 0.13 0.22 rg BT /F2 14 Tf 50 715 Td (Transactions, mutation and recovery) Tj ET
-BT /F1 11 Tf 15 TL 50 685 Td
-(SFS-family metadata uses transaction storage and markers TRST, TRFA and) Tj
-T* (TROK. In the reference clean reader, the marker is at) Tj
-T* (root_object_container+2; a valid TROK is required and TRFA is rejected) Tj
-T* (instead of replayed. A dirty marker is not a repair instruction. A native) Tj
-T* (writer must preserve old metadata until the recoverable transaction is) Tj
-T* (established, update object containers, node/hash indexes, extent links and) Tj
-T* (both allocation layers coherently, and publish the required native) Tj
-T* (transaction state. Relocation must copy and verify data before changing) Tj
-T* (ownership, then retire the old run only after durable publication. Exact) Tj
-T* (transaction encoding, replay ordering, root sequence rollover and all native) Tj
-T* (link semantics need independent original-format evidence before general) Tj
-T* (writer qualification.) Tj
-ET
-0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 8 | Original format, not provider qualification) Tj ET
+0.06 0.15 0.23 rg 0 768 595 74 re f
+1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
+BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
+0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (7. Extent B-tree and worked mapping) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (BNDC blocks have node count at 12 \(16 bits\), leaf flag 14, stride 15; records begin) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (at 16. Internal records contain big-endian lower-bound key and child block \(eight) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (bytes\). Leaf key is the physical start of a contiguous extent, with next and) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (previous extent keys at 4 and 8. Search by the wanted key, taking the greatest) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (lower-bound internal key, then require an exact leaf match. Follow the file's first) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (extent and subsequent next links in logical order; validate previous links, length,) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (range, allocation and cycles. For a 4096-byte block and a file with run \(100,3\)) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (followed by \(500,2\), logical byte 14000 is 1712 bytes into the second run, at) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 594 Td (partition byte 2049712. Clip to logical EOF and distinguish raw payload from B-tree) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 580 Td (metadata.) Tj ET
+0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 8) Tj ET
 
 %%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.01 0.52 0.56 rg 50 747 116 5 re f
-1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
-BT /F2 21 Tf 50 775 Td (SFS - technical reference) Tj ET
-0.05 0.13 0.22 rg BT /F2 14 Tf 50 715 Td (Independent verification) Tj ET
-BT /F1 11 Tf 15 TL 50 685 Td
-(Test authentic Amiga SFS media, both root copies, block-size boundaries,) Tj
-T* (long names, native case comparison, multiple object containers, extent tree) Tj
-T* (depth, fragmented files, admin-space exhaustion, allocation mismatch and) Tj
-T* (dirty transaction state. For each file compare logical byte length and) Tj
-T* (payload hash against an independent reader. Verify full metadata ownership,) Tj
-T* (not just extent data, and inject interruption after every write phase. A) Tj
-T* (formatter must establish matching root copies, bitmap and admin allocation,) Tj
-T* (root object and node indexes, extent tree and clean transaction metadata.) Tj
-T* (Source-level evidence is not runtime proof. Prior manual follows as) Tj
-T* (historical provenance.) Tj
-ET
-0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 9 | Original format, not provider qualification) Tj ET
+0.06 0.15 0.23 rg 0 768 595 74 re f
+1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
+BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
+0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (8. Transactions, mutation and recovery) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (SFS-family metadata uses transaction storage and markers TRST, TRFA and TROK. In) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (the reference clean reader, the marker is at root_object_container+2; a valid TROK) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (is required and TRFA is rejected instead of replayed. A dirty marker is not a) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (repair instruction. A native writer must preserve old metadata until the) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (recoverable transaction is established, update object containers, node/hash) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (indexes, extent links and both allocation layers coherently, and publish the) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (required native transaction state. Relocation must copy and verify data before) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (changing ownership, then retire the old run only after durable publication. Exact) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 594 Td (transaction encoding, replay ordering, root sequence rollover and all native link) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 580 Td (semantics need independent original-format evidence before general writer) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 566 Td (qualification.) Tj ET
+0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 9) Tj ET
 
 %%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.01 0.52 0.56 rg 50 747 116 5 re f
-1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
-BT /F2 21 Tf 50 775 Td (SFS - technical reference) Tj ET
-0.05 0.13 0.22 rg BT /F2 14 Tf 50 715 Td (Source boundary) Tj ET
-BT /F1 11 Tf 15 TL 50 685 Td
-(Source evidence:) Tj
-T* (https://github.com/Infiltrator-Projects/Filesystem-SFS/tree/39ec1c3bea83498e) Tj
-T* (23d4447678136cc60305ee04/native/filesystems/sfs/original/asfs ; the matching) Tj
-T* (core and module reader are separate implementation evidence at that commit.) Tj
-T* (Cross-check original Amiga handler and amipart formatter images, not just) Tj
-T* (self-generated fixtures. Full native writer, transaction recovery and exact) Tj
-T* (object-node coverage encoding remain open verification requirements.) Tj
-ET
-0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 10 | Original format, not provider qualification) Tj ET
+0.06 0.15 0.23 rg 0 768 595 74 re f
+1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
+BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
+0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (9. Independent verification) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (Test authentic Amiga SFS media, both root copies, block-size boundaries, long) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (names, native case comparison, multiple object containers, extent tree depth,) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (fragmented files, admin-space exhaustion, allocation mismatch and dirty transaction) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (state. For each file compare logical byte length and payload hash against an) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (independent reader. Verify full metadata ownership, not just extent data, and) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (inject interruption after every write phase. A formatter must establish matching) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (root copies, bitmap and admin allocation, root object and node indexes, extent tree) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (and clean transaction metadata. Source-level evidence is not runtime proof.) Tj ET
+0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 10) Tj ET
 
 %%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.01 0.52 0.56 rg 50 747 116 5 re f
-1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
-BT /F2 21 Tf 50 775 Td (SFS - technical reference) Tj ET
-0.05 0.13 0.22 rg BT /F2 14 Tf 50 715 Td (Historical reference appendix) Tj ET
-BT /F1 11 Tf 15 TL 50 685 Td
-(The earlier manual follows for provenance. Its provider and qualification) Tj
-T* (statements are historical; the new engineering chapters take precedence for) Tj
-T* (format interpretation.) Tj
-ET
-0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 11 | Original format, not provider qualification) Tj ET
+0.06 0.15 0.23 rg 0 768 595 74 re f
+1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
+BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
+0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (10. Implementation and qualification boundary) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (Historical qualification record 45516221620 documents the provider's then-declared) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (probe, mount, namespace read and format, with I/O and allocation failure) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (distinguished from format rejection. A formatter does not establish writable) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (namespace or transactional relocation.) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 640 Td (Common V2 is the independent provider interface:) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 626 Td (https://github.com/Infiltrator-Projects/Libraries/blob/main/docs/FILESYSTEM_COMMON_) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 612 Td (ABI_V2.md . Negotiate real operation masks and media profiles. Use bounded host) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 598 Td (I/O, exclusive unmounted ownership and durable flush for mutation; distinguish) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 584 Td (unsupported, corrupt, I/O and stale-handle results. Test Media and Defragmenter use) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 570 Td (the same engine only for supported operations. Hosted, freestanding, BOOT, kernel,) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 556 Td (recovery and package qualification are independent. Current capability and release) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 542 Td (status belongs to the repository README and exact-source qualification records;) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 528 Td (historical evidence is not a current status claim.) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 504 Td (Historical source or test reference:) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 490 Td (https://github.com/Infiltrator-Projects/Filesystem-SFS/actions/runs/45516221620 .) Tj ET
+0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 11) Tj ET
 
 %%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.04 0.54 0.60 rg 50 747 115 4 re f
-0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
-BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801.0 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
-BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771.0 Tm (Amiga SmartFileSystem - SFS) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 50 34.0 Tm (Filesystem-SFS / researched original-format reference) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 512 34.0 Tm (PAGE 01) Tj ET
-BT /F2 12 Tf 0.02 0.50 0.55 rg 1 0 0 1 50 694.0 Tm (OFFICIAL FORMAT / CHRONOLOGY / ENGINEERING) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 650.0 Tm (A third-party Amiga filesystem designed for higher performance and improved crash) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 633.0 Tm (resilience using modernised metadata structures and transactions.) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 603.0 Tm (This guide documents the original format's technical architecture, history and independent) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 586.0 Tm (source references. InfiltratorOS modules and install packages are implementation) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 569.0 Tm (artefacts, not the authority for the historic on-disk definition.) Tj ET
-BT /F2 12 Tf 0.02 0.50 0.55 rg 1 0 0 1 50 539.0 Tm (CONCEPTUAL MEDIA MAP) Tj ET
-0.05 0.36 0.47 rg 50 455 238 67 re f
-BT /F2 11 Tf 1 1 1 rg 1 0 0 1 62 487.0 Tm (SFS ROOT) Tj ET
-BT /F1 8.5 Tf 0.85 0.97 0.97 rg 1 0 0 1 62 468.0 Tm (Volume identification and metadata) Tj ET
-0.08 0.39 0.49 rg 301 455 238 67 re f
-BT /F2 11 Tf 1 1 1 rg 1 0 0 1 313 487.0 Tm (OBJECT INDEX) Tj ET
-BT /F1 8.5 Tf 0.85 0.97 0.97 rg 1 0 0 1 313 468.0 Tm (Directory and file object records) Tj ET
-0.10 0.43 0.52 rg 50 373 238 67 re f
-BT /F2 11 Tf 1 1 1 rg 1 0 0 1 62 405.0 Tm (SPACE MAP) Tj ET
-BT /F1 8.5 Tf 0.85 0.97 0.97 rg 1 0 0 1 62 386.0 Tm (Allocated and free blocks) Tj ET
-0.13 0.46 0.54 rg 301 373 238 67 re f
-BT /F2 11 Tf 1 1 1 rg 1 0 0 1 313 405.0 Tm (TRANSACTION STATE) Tj ET
-BT /F1 8.5 Tf 0.85 0.97 0.97 rg 1 0 0 1 313 386.0 Tm (Consistent metadata updates) Tj ET
-BT /F2 12 Tf 0.02 0.50 0.55 rg 1 0 0 1 50 332.0 Tm (CONTENTS) Tj ET
-BT /F1 10.4 Tf 0.07 0.16 0.23 rg 1 0 0 1 51 305.0 Tm (1. Historical chronology) Tj ET
-BT /F1 10.4 Tf 0.07 0.16 0.23 rg 1 0 0 1 51 282.0 Tm (2. Original on-disk architecture) Tj ET
-BT /F1 10.4 Tf 0.07 0.16 0.23 rg 1 0 0 1 51 259.0 Tm (3. Allocation and directories) Tj ET
-BT /F1 10.4 Tf 0.07 0.16 0.23 rg 1 0 0 1 51 236.0 Tm (4. Integrity and recovery) Tj ET
-BT /F1 10.4 Tf 0.07 0.16 0.23 rg 1 0 0 1 51 213.0 Tm (5. Design rationale and limitations) Tj ET
-BT /F1 10.4 Tf 0.07 0.16 0.23 rg 1 0 0 1 51 190.0 Tm (6. InfiltratorOS integration boundary) Tj ET
-
-%%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.04 0.54 0.60 rg 50 747 115 4 re f
-0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
-BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801.0 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
-BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771.0 Tm (Amiga SmartFileSystem - SFS) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 50 34.0 Tm (Filesystem-SFS / researched original-format reference) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 512 34.0 Tm (PAGE 02) Tj ET
-BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711.0 Tm (HISTORICAL CHRONOLOGY) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676.0 Tm (SmartFileSystem emerged in the late 1990s Amiga ecosystem as an alternative to the) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 659.0 Tm (original OFS/FFS families. It sought improved directory performance, efficient use of hard) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 642.0 Tm (disks and stronger resilience to interruption than conventional bitmap updates. The Amiga) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 625.0 Tm (community and AmigaOS 4 documentation recognise SmartFileSystem as a separate format) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 608.0 Tm (rather than a variant of the DOS0-DOS5 family.) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 578.0 Tm (AmigaOS developer and distribution archives record versions, tools and source components) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 561.0 Tm (of SmartFileSystem, including object and transaction handling. SFS0 and SFS2 should not be) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 544.0 Tm (presented as identical disk layouts. The historical source releases and operating-system) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 527.0 Tm (support tables are important for assessing actual on-media revisions and operational) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 510.0 Tm (limits.) Tj ET
-
-%%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.04 0.54 0.60 rg 50 747 115 4 re f
-0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
-BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801.0 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
-BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771.0 Tm (Amiga SmartFileSystem - SFS) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 50 34.0 Tm (Filesystem-SFS / researched original-format reference) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 512 34.0 Tm (PAGE 03) Tj ET
-BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711.0 Tm (ORIGINAL ON-DISK ARCHITECTURE) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676.0 Tm (SFS uses object-oriented metadata for the file and directory namespace and tracks space) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 659.0 Tm (allocation independently from the old OFS/FFS layout. Directory access and object lookup) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 642.0 Tm (are designed for larger collections and more efficient updates. Source archives expose) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 625.0 Tm (object, transaction, free-space and recovery-related structures; the exact disk fields) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 608.0 Tm (must be read from the matching source revision.) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 578.0 Tm (The persistent root and transaction state must be internally consistent before enabling) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 561.0 Tm (writes. SFS is not FAT and does not use a FAT12-style next-cluster array for all files;) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 544.0 Tm (similarly, it does not use the checksummed 24-byte OFS data block header. Object) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 527.0 Tm (identifiers, free-space structures and transaction ordering are fundamental to) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 510.0 Tm (understanding its recovery behaviour.) Tj ET
-
-%%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.04 0.54 0.60 rg 50 747 115 4 re f
-0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
-BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801.0 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
-BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771.0 Tm (Amiga SmartFileSystem - SFS) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 50 34.0 Tm (Filesystem-SFS / researched original-format reference) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 512 34.0 Tm (PAGE 04) Tj ET
-BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711.0 Tm (ALLOCATION AND DIRECTORIES) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676.0 Tm (File objects describe contents and metadata; directory objects associate names with) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 659.0 Tm (referenced objects. Efficient directory lookup is a design goal, reducing the overhead) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 642.0 Tm (that older Amiga filesystem formats encountered in large directories. Free-space tracking) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 625.0 Tm (supports selecting and reusing storage without needing to traverse all existing file) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 608.0 Tm (chains.) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 578.0 Tm (Names, comments, object references and protection information must be interpreted using) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 561.0 Tm (the exact SFS variant and its charset policy. Fragmentation management and metadata) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 544.0 Tm (updates require coordination with transaction state. A disk inspector should never invent) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 527.0 Tm (field offsets when a historical source tree documents a different revision.) Tj ET
-
-%%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.04 0.54 0.60 rg 50 747 115 4 re f
-0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
-BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801.0 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
-BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771.0 Tm (Amiga SmartFileSystem - SFS) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 50 34.0 Tm (Filesystem-SFS / researched original-format reference) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 512 34.0 Tm (PAGE 05) Tj ET
-BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711.0 Tm (INTEGRITY AND RECOVERY) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676.0 Tm (SmartFileSystem designs aim to avoid lengthy validation of a normally interrupted volume) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 659.0 Tm (by controlling metadata commit state. This is not a promise of full user-data journalling) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 642.0 Tm (or immunity to corrupted sectors. SFS transaction semantics should be explained from) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 625.0 Tm (source code and not conflated with ext3 JBD, ZFS transaction groups or NTFS $LogFile.) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 595.0 Tm (Recovering an SFS volume requires a consistent root, valid object tree, allocation) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 578.0 Tm (metadata and acceptable transaction state. One must validate the on-disk format variant) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 561.0 Tm (and preserve all recoverable versions of metadata before mutation. Format-recognition) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 544.0 Tm (success does not establish that a damaged filesystem can be safely rewritten.) Tj ET
-
-%%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.04 0.54 0.60 rg 50 747 115 4 re f
-0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
-BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801.0 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
-BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771.0 Tm (Amiga SmartFileSystem - SFS) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 50 34.0 Tm (Filesystem-SFS / researched original-format reference) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 512 34.0 Tm (PAGE 06) Tj ET
-BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711.0 Tm (DESIGN RATIONALE AND LIMITATIONS) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676.0 Tm (The major historical step was moving beyond the traditional Amiga root, bitmap and) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 659.0 Tm (file-header scheme toward metadata structures suitable for larger disks and more frequent) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 642.0 Tm (changes. That brought improvements in common directory workloads and startup after) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 625.0 Tm (interruption, but also introduced more complex internal logic than classic Amiga FFS.) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 595.0 Tm (Historical SFS implementations have platform and capacity limits, and some older variants) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 578.0 Tm (have different revision and addressing constraints. SFS can be a valid disk format even if) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 561.0 Tm (a particular Linux port only supports reading it. Published statements should distinguish) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 544.0 Tm (the disk standard, vendor claims and a tested driver implementation.) Tj ET
-
-%%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.04 0.54 0.60 rg 50 747 115 4 re f
-0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
-BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801.0 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
-BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771.0 Tm (Amiga SmartFileSystem - SFS) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 50 34.0 Tm (Filesystem-SFS / researched original-format reference) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 512 34.0 Tm (PAGE 07) Tj ET
-BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711.0 Tm (INFILTRATOROS INTEGRATION BOUNDARY) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676.0 Tm (SFS.so must independently identify the variant and source-revision format before reporting) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 659.0 Tm (usable capabilities. Its existence does not qualify on-media write and recovery support. A) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 642.0 Tm (separate SFS2.so is required when the namespace, addressing or disk structures are) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 625.0 Tm (incompatible.) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 595.0 Tm (The AmigaOS source distribution and filesystem table are the historical reference points.) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 578.0 Tm (Our application's .so, its .run installer and a stored kernel adapter do not define the) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 561.0 Tm (upstream SmartFileSystem format.) Tj ET
-
-%%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.04 0.54 0.60 rg 50 747 115 4 re f
-0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
-BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801.0 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
-BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771.0 Tm (Amiga SmartFileSystem - SFS) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 50 34.0 Tm (Filesystem-SFS / researched original-format reference) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 512 34.0 Tm (PAGE 08) Tj ET
-BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711.0 Tm (PRIMARY SOURCE REFERENCES) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676.0 Tm (These primary technical documents and near-contemporary references provide provenance for) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 659.0 Tm (the design history and on-disk structures. For exact field sizes or a particular format) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 642.0 Tm (revision, consult the original specifications and source code, not the conceptual cover) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 625.0 Tm (illustration.) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 595.0 Tm (1. AmigaOS file systems comparison, SFS and SFS2) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 565.0 Tm (https://wiki.amigaos.net/wiki/UserDoc%3AAmigaOS_File_Systems) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 535.0 Tm (2. Original SmartFileSystem source and documentation archive) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 505.0 Tm (https://os4depot.net/?file=driver%2Ffilesystem%2Fsfs.lha&function=showcontent) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 475.0 Tm (3. Amiga SmartFileSystem background) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 445.0 Tm (https://wiki.amiga.org/index.php?title=SmartFileSystem) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 415.0 Tm (Our Common V2 .so, build procedures and test evidence describe a separate) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 398.0 Tm (implementation. The source-level history in this PDF cannot itself qualify production) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 381.0 Tm (writes, boot, recovery or cross-platform compatibility.) Tj ET
-
-%%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.01 0.52 0.56 rg 50 747 116 5 re f
-0.75 0.82 0.85 RG .7 w 50 49 m 545 49 l S
-BT /F2 9 Tf 0.62 0.88 0.91 rg 1 0 0 1 50 800 Tm (INFILTRATOR / ORIGINAL FILESYSTEM ENGINEERING APPENDIX) Tj ET
-BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 770 Tm (SFS / engineering detail) Tj ET
-BT /F1 8 Tf 0.3 0.39 0.42 rg 1 0 0 1 50 34 Tm (Original format research; consult primary references for normative fields) Tj ET
-BT /F1 8 Tf 0.3 0.39 0.42 rg 1 0 0 1 509 34 Tm (PAGE 09) Tj ET
-BT /F2 13.5 Tf 0.02 0.44 0.50 rg 1 0 0 1 50 710 Tm (DISK READ PATH / ENGINEERING NOTES) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 678 Tm (1. Confirm the SFS0-compatible disk identifier and exact SmartFileSystem generation) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 661.5 Tm (before interpreting root, object and allocation structures.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 635 Tm (2. Read the original volume metadata and determine the current persistent object index.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 618.5 Tm (The object namespace is not an OFS/FFS directory-hash layout.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 592 Tm (3. Locate file and directory objects through the format-specific object structures;) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 575.5 Tm (record identity and object linkage must be checked before file-data translation.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 549 Tm (4. Reconstruct allocation using free-space and extent metadata instead of assuming a) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 532.5 Tm (single FAT-style chain of cluster numbers.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 506 Tm (5. Interpret modification state and transaction-related metadata together. A completed) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 489.5 Tm (data write is not proof that its new namespace state was committed.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 463 Tm (6. Check object keys, directory entries and the lengths of named objects against the) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 446.5 Tm (applicable format revision before following pointers.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 420 Tm (7. Separate SFS on-disk fields from AmigaDOS handler APIs: a handler may expose familiar) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 403.5 Tm (filenames while using a wholly different block organisation.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 377 Tm (8. Where source revisions disagree on field interpretation, make the stored format) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 360.5 Tm (revision and original source implementation authoritative.) Tj ET
-
-%%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.01 0.52 0.56 rg 50 747 116 5 re f
-0.75 0.82 0.85 RG .7 w 50 49 m 545 49 l S
-BT /F2 9 Tf 0.62 0.88 0.91 rg 1 0 0 1 50 800 Tm (INFILTRATOR / ORIGINAL FILESYSTEM ENGINEERING APPENDIX) Tj ET
-BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 770 Tm (SFS / engineering detail) Tj ET
-BT /F1 8 Tf 0.3 0.39 0.42 rg 1 0 0 1 50 34 Tm (Original format research; consult primary references for normative fields) Tj ET
-BT /F1 8 Tf 0.3 0.39 0.42 rg 1 0 0 1 509 34 Tm (PAGE 10) Tj ET
-BT /F2 13.5 Tf 0.02 0.44 0.50 rg 1 0 0 1 50 710 Tm (VALIDATION, RECOVERY AND COMPATIBILITY) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 678 Tm (1. Require a coherent root/object mapping and allocation graph before enabling writes;) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 661.5 Tm (surviving blocks from earlier updates are not automatically current.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 635 Tm (2. Cross-check object references against directory membership and ensure that a freed) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 618.5 Tm (extent is not still reachable from a live object.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 592 Tm (3. A metadata update may be interrupted between old and new roots. Preserve both states) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 575.5 Tm (for analysis rather than assuming the newest-looking block is valid.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 549 Tm (4. Verify signatures and record lengths before using object structures. Arbitrary raw) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 532.5 Tm (block values must not be mistaken for valid object identifiers.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 506 Tm (5. Do not load SFS0 media through an SFS2-only decoder or assume either variant is a) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 489.5 Tm (harmless size extension of the other.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 463 Tm (6. Report uncertainty where historical sources do not establish a normative field offset;) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 446.5 Tm (guessing layout from an illustration risks data corruption.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 420 Tm (7. Document what the independent adapter can read and write separately from the original) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 403.5 Tm (SFS design and source-level capabilities.) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 377 Tm (8. Treat recovery as a graph-consistency problem, not a generic FAT repair or OFS bitmap) Tj ET
-BT /F1 10 Tf 0.09 0.16 0.24 rg 1 0 0 1 55 360.5 Tm (rebuild.) Tj ET
-
-%%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.04 0.54 0.60 rg 50 747 115 4 re f
-0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
-BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801 Tm (INFILTRATOR / IMPLEMENTATION REFERENCE) Tj ET
-BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771 Tm (SFS / Common V2 provider) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 50 34 Tm (Implementation appendix / source revision 8d7e77451b44) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 505 34 Tm (PAGE 11) Tj ET
-BT /F2 13 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 710 Tm (1. PURPOSE AND FORMAT SCOPE) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 686 Tm (Original SmartFilesystem \(SFS0\), distinct from SFS2. This repository owns) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 671 Tm (the format-specific implementation of SFS.so for InfiltratorOS.) Tj ET
-BT /F2 13 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 641 Tm (2. ON-DISK ARCHITECTURE AND INVARIANTS) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 617 Tm (Allocation trees and object/container metadata belong to the original SFS0) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 602 Tm (layout. Validate metadata identity and allocation bounds before reading;) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 587 Tm (do not interpret SFS2 allocation roots as SFS0.) Tj ET
-BT /F2 13 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 557 Tm (3. COMMON V2 IMPLEMENTATION AND CAPABILITIES) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 533 Tm (The current provider declares probe, mount, unmount, stat, directory) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 518 Tm (enumeration, file read and format callbacks. Probe preserves native I/O) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 503 Tm (and allocation failure status rather than converting it to an unrecognised) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 488 Tm (format. The canonical entry point is infiltrator_filesystem_api_v2.) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 473 Tm (Consumers must negotiate the actual profile and operation masks and use) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 458 Tm (bounded, partition-relative host I/O. A source-level callback does not by) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 443 Tm (itself establish that every format variant or host profile is qualified.) Tj ET
-
-%%Page
-0.05 0.13 0.22 rg 0 749 595 93 re f
-0.04 0.54 0.60 rg 50 747 115 4 re f
-0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
-BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801 Tm (INFILTRATOR / IMPLEMENTATION REFERENCE) Tj ET
-BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771 Tm (SFS / Common V2 provider) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 50 34 Tm (Implementation appendix / source revision 8d7e77451b44) Tj ET
-BT /F1 8 Tf 0.34 0.40 0.44 rg 1 0 0 1 505 34 Tm (PAGE 12) Tj ET
-BT /F2 13 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 710 Tm (4. INTEGRITY, MUTATION, ALLOCATION AND RECOVERY) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 686 Tm (Do not infer writable namespace or transactional relocation from a format) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 671 Tm (callback. Formatting must be independently qualified; historical engines) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 656 Tm (do not constitute exported V2 capabilities. For destructive operations,) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 641 Tm (require the applicable exclusive writable host, durability contract and) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 626 Tm (format-specific validation. Never silently substitute a kernel or FUSE) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 611 Tm (driver or treat a rejected or unavailable operation as success. Preserve) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 596 Tm (original disk-format semantics; relocation and recovery are separate from) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 581 Tm (ordinary file I/O.) Tj ET
-BT /F2 13 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 551 Tm (5. BUILD, INSTALLATION AND RELEASE) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 527 Tm (The target installation is /System/Filesystems/SFS.so and) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 512 Tm (/System/Resources/Documentation/Filesystem-SFS.pdf. The project release) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 497 Tm (policy is a portable amd64 DEB and a CPU-native source-first RUN, with) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 482 Tm (GitHub's automatic source archive; do not treat this policy statement as) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 467 Tm (verification of the current installer payload. The release workflow is the) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 452 Tm (authoritative executable build and package specification. Historical) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 437 Tm (adapters and test artifacts are not additional production filesystem) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 422 Tm (authorities.) Tj ET
-BT /F2 13 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 392 Tm (6. QUALIFICATION AND LIMITATIONS) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 368 Tm (Recorded qualification workflow) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 353 Tm (\(https://github.com/Infiltrator-Projects/Filesystem-SFS/actions/runs/45516) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 338 Tm (221620\) | Current workflows) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 323 Tm (\(https://github.com/Infiltrator-Projects/Filesystem-SFS/actions?query=bran) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 308 Tm (ch%3Amain\). A successful workflow establishes the tested scope only, not) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 293 Tm (complete original-format parity, physical-media crash safety, or) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 278 Tm (production BOOT/kernel integration. Use disposable images for destructive) Tj ET
-BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 263 Tm (qualification.) Tj ET
+0.06 0.15 0.23 rg 0 768 595 74 re f
+1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
+BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
+0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (11. Source boundary) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (Source evidence:) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (https://github.com/Infiltrator-Projects/Filesystem-SFS/tree/39ec1c3bea83498e23d4447) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (678136cc60305ee04/native/filesystems/sfs/original/asfs ; the matching core and) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (module reader are separate implementation evidence at that commit. Cross-check) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (original Amiga handler and amipart formatter images, not just self-generated) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (fixtures. Full native writer, transaction recovery and exact object-node coverage) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (encoding remain open verification requirements.) Tj ET
+0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 12) Tj ET
