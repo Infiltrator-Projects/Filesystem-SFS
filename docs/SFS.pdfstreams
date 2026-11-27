@@ -20,17 +20,17 @@ BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
 1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
 BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
 0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (1. History and version boundary) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (Smart File System is an Amiga filesystem developed by John Hendrikx, with later) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (development by Ralph Schmidt and others. This reference treats SFS/0 \(binary) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (identifier 0x53465300\), structure version 3, separately from SFS/2. It uses a) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (block-indexed object namespace, linked extents held in a B-tree, allocation bitmaps) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (and reserved administrative space. The pinned evidence is the original ASFS Linux) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (implementation preserved in this repository and the independent amipart format) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (writer preserved in the SFS2 repository. Neither an Amiga DOS volume nor a later) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (SFS2 volume is admitted solely by a common prefix.) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 584 Td (SFS emerged in the late 1990s as an Amiga alternative to OFS/FFS, targeting more) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 570 Td (responsive directories and recoverable metadata updates. The AmigaOS ecosystem) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 556 Td (recognises SFS as a separate format, not a DOS-type variation of FFS.) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (Smart File System emerged in the late 1990s as an Amiga alternative to OFS/FFS,) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (developed by John Hendrikx with later work by Ralph Schmidt and others. This) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (reference treats SFS/0 \(binary identifier 0x53465300\), structure version 3,) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (separately from SFS/2. It uses a block-indexed object namespace, linked extents) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (held in a B-tree, allocation bitmaps and reserved administrative space. The) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (pinned evidence is the original ASFS Linux implementation preserved in this) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (repository and the independent amipart format writer preserved in the SFS2) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (repository. Neither an Amiga DOS volume nor a later SFS2 volume is admitted) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 594 Td (solely by a common prefix.) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 570 Td (Its goals include responsive directories and recoverable metadata updates.) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 556 Td (AmigaOS recognises SFS as a separate format, not a DOS-type variation of FFS.) Tj ET
 0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 2) Tj ET
 
 %%Page

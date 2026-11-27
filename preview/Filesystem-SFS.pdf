@@ -42,23 +42,23 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 9 0 R >>
 endobj
 9 0 obj
-<< /Length 1731 >>
+<< /Length 1685 >>
 stream
 0.06 0.15 0.23 rg 0 768 595 74 re f
 1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
 BT /F2 22 Tf 43 784 Td (SFS - technical reference) Tj ET
 0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (1. History and version boundary) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (Smart File System is an Amiga filesystem developed by John Hendrikx, with later) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (development by Ralph Schmidt and others. This reference treats SFS/0 \(binary) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (identifier 0x53465300\), structure version 3, separately from SFS/2. It uses a) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (block-indexed object namespace, linked extents held in a B-tree, allocation bitmaps) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (and reserved administrative space. The pinned evidence is the original ASFS Linux) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (implementation preserved in this repository and the independent amipart format) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (writer preserved in the SFS2 repository. Neither an Amiga DOS volume nor a later) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (SFS2 volume is admitted solely by a common prefix.) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 584 Td (SFS emerged in the late 1990s as an Amiga alternative to OFS/FFS, targeting more) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 570 Td (responsive directories and recoverable metadata updates. The AmigaOS ecosystem) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 556 Td (recognises SFS as a separate format, not a DOS-type variation of FFS.) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (Smart File System emerged in the late 1990s as an Amiga alternative to OFS/FFS,) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (developed by John Hendrikx with later work by Ralph Schmidt and others. This) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (reference treats SFS/0 \(binary identifier 0x53465300\), structure version 3,) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (separately from SFS/2. It uses a block-indexed object namespace, linked extents) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (held in a B-tree, allocation bitmaps and reserved administrative space. The) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (pinned evidence is the original ASFS Linux implementation preserved in this) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (repository and the independent amipart format writer preserved in the SFS2) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (repository. Neither an Amiga DOS volume nor a later SFS2 volume is admitted) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 594 Td (solely by a common prefix.) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 570 Td (Its goals include responsive directories and recoverable metadata updates.) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 556 Td (AmigaOS recognises SFS as a separate format, not a DOS-type variation of FFS.) Tj ET
 0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 2) Tj ET
 endstream
 endobj
@@ -303,28 +303,28 @@ xref
 0000000551 00000 n 
 0000001837 00000 n 
 0000001983 00000 n 
-0000003765 00000 n 
-0000003913 00000 n 
-0000005698 00000 n 
-0000005846 00000 n 
-0000007279 00000 n 
-0000007427 00000 n 
-0000009001 00000 n 
-0000009149 00000 n 
-0000010820 00000 n 
-0000010968 00000 n 
-0000012651 00000 n 
-0000012799 00000 n 
-0000014443 00000 n 
-0000014591 00000 n 
-0000016337 00000 n 
-0000016485 00000 n 
-0000017910 00000 n 
-0000018058 00000 n 
-0000020272 00000 n 
-0000020420 00000 n 
+0000003719 00000 n 
+0000003867 00000 n 
+0000005652 00000 n 
+0000005800 00000 n 
+0000007233 00000 n 
+0000007381 00000 n 
+0000008955 00000 n 
+0000009103 00000 n 
+0000010774 00000 n 
+0000010922 00000 n 
+0000012605 00000 n 
+0000012753 00000 n 
+0000014397 00000 n 
+0000014545 00000 n 
+0000016291 00000 n 
+0000016439 00000 n 
+0000017864 00000 n 
+0000018012 00000 n 
+0000020226 00000 n 
+0000020374 00000 n 
 trailer
 << /Size 30 /Root 1 0 R >>
 startxref
-21618
+21572
 %%EOF

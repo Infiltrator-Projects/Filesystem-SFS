@@ -2,9 +2,9 @@
 
 ## History and version boundary
 
-Smart File System is an Amiga filesystem developed by John Hendrikx, with later development by Ralph Schmidt and others. This reference treats SFS/0 (binary identifier 0x53465300), structure version 3, separately from SFS/2. It uses a block-indexed object namespace, linked extents held in a B-tree, allocation bitmaps and reserved administrative space. The pinned evidence is the original ASFS Linux implementation preserved in this repository and the independent amipart format writer preserved in the SFS2 repository. Neither an Amiga DOS volume nor a later SFS2 volume is admitted solely by a common prefix.
+Smart File System emerged in the late 1990s as an Amiga alternative to OFS/FFS, developed by John Hendrikx with later work by Ralph Schmidt and others. This reference treats SFS/0 (binary identifier 0x53465300), structure version 3, separately from SFS/2. It uses a block-indexed object namespace, linked extents held in a B-tree, allocation bitmaps and reserved administrative space. The pinned evidence is the original ASFS Linux implementation preserved in this repository and the independent amipart format writer preserved in the SFS2 repository. Neither an Amiga DOS volume nor a later SFS2 volume is admitted solely by a common prefix.
 
-SFS emerged in the late 1990s as an Amiga alternative to OFS/FFS, targeting more responsive directories and recoverable metadata updates. The AmigaOS ecosystem recognises SFS as a separate format, not a DOS-type variation of FFS.
+Its goals include responsive directories and recoverable metadata updates. AmigaOS recognises SFS as a separate format, not a DOS-type variation of FFS.
 
 ## Root copies and geometry
 
